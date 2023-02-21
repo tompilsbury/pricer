@@ -1,5 +1,5 @@
 # Custom pricer for tf2autobot
-** USE AT OWN RISK OF ITEMS 
+*** USE AT OWN RISK OF ITEMS ***
 
 This is a pricer written in Python that uses Flask, Flask-socketio, Redis and Celery.
 
