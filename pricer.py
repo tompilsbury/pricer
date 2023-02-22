@@ -63,7 +63,7 @@ def getPrice(sku):
             sellListings.append(i)
         elif 'userAgent' in i:
             buyListings.append(i)
-
+    
     #Reverse so best prices are at the tops of the stacks.
     sellListings.reverse()
     buyListings.reverse()
@@ -73,10 +73,15 @@ def getPrice(sku):
             'keys': 0,
             'metal': 0    
         }
-        
-        
+        #Check if listing is from the bot. If it is, look at next one
+        if first['steamid'] == '76561198817843697':
+            return getBuy(buyListings.pop())
+
         if len(buyListings) > 1:
             x = buyListings.pop()
+            #Check if listing is from the bot. If it is, look at next one
+            if x['steamid'] == '76561198817843697':
+                x = buyListings.pop()
 
             #If both listings are for >=1 key
             if 'keys' in first['currencies'] and 'keys' in x['currencies']:
@@ -142,9 +147,15 @@ def getPrice(sku):
             'keys': 0,
             'metal': 0    
         }
+        #Check if listing is from the bot. If it is, look at next one
+        if first['steamid'] == '76561198817843697':
+            return getSell(sellListings.pop())
 
         if len(sellListings) > 1:
             x = sellListings.pop()
+            #Check if listing is from the bot. If it is, look at next one
+            if x['steamid'] == '76561198817843697':
+                x = sellListings.pop()
 
             #If both listings are for >=1 key
             if 'keys' in first['currencies'] and 'keys' in x['currencies']:
@@ -217,6 +228,10 @@ def getPrice(sku):
             "metal": 0
         }
 
+    sell['metal'] = math.floor(sell['metal']*100)/100
+    buy['metal'] = math.floor(buy['metal']*100)/100
+
+
     #Buying for more than selling, get a cheaper buy price (sell price has priority)
     if buy['keys'] > sell['keys']:
         buy = getBuy(buyListings.pop())
@@ -231,7 +246,6 @@ def getPrice(sku):
     
     price = (Price(buy, sell, name, sku)).get_json()
     return price
-
 
 @socketio.on('connect')
 def connect():
