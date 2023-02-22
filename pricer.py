@@ -8,17 +8,19 @@ from tf2utilities.main import TF2
 import eventlet
 from celery import Celery
 
+#import config file
+import config
 
-tf2 = TF2("9D53B0F640EF445E07B5F6677D815EA8").schema
-pathToPricelist = '/Users/tompilsbury/Documents/tf2autobot/files/s2gsby'
+
+tf2 = TF2(config.steamApiKey).schema
 
 eventlet.monkey_patch(socket=True)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
-socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True, message_queue='redis://127.0.0.1:6379' ) #message_queue='redis://127.0.0.1:6379' 
+socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True, message_queue='redis://' + config.redisURL)
 
-celery = Celery(app.name, broker='redis://127.0.0.1:6379')
+celery = Celery(app.name, broker='redis://' + config.redisURL)
 celery.conf.update(app.config)
 
 item = {
@@ -50,7 +52,7 @@ def getPrice(sku):
     #Convert to name from sku
     name = tf2.getNameFromSku(sku)
     #Get item listing data from bptf api
-    url = 'https://backpack.tf/api/classifieds/listings/snapshot?token=585528ebc4404562980c4bc0&sku=' + parse.quote(name) + '&appid=440'
+    url = f'https://backpack.tf/api/classifieds/listings/snapshot?token={config.bptfApiKey}&sku={parse.quote(name)}&appid=440'
     data = json.load(request.urlopen(url))
     listings = data['listings']
     #Initialise Listings stacks
@@ -74,13 +76,13 @@ def getPrice(sku):
             'metal': 0    
         }
         #Check if listing is from the bot. If it is, look at next one
-        if first['steamid'] == '76561198817843697':
+        if first['steamid'] == config.botSteamID:
             return getBuy(buyListings.pop())
 
         if len(buyListings) > 1:
             x = buyListings.pop()
             #Check if listing is from the bot. If it is, look at next one
-            if x['steamid'] == '76561198817843697':
+            if x['steamid'] == config.botSteamID:
                 x = buyListings.pop()
 
             #If both listings are for >=1 key
@@ -148,13 +150,13 @@ def getPrice(sku):
             'metal': 0    
         }
         #Check if listing is from the bot. If it is, look at next one
-        if first['steamid'] == '76561198817843697':
+        if first['steamid'] == config.botSteamID:
             return getSell(sellListings.pop())
 
         if len(sellListings) > 1:
             x = sellListings.pop()
             #Check if listing is from the bot. If it is, look at next one
-            if x['steamid'] == '76561198817843697':
+            if x['steamid'] == config.botSteamID:
                 x = sellListings.pop()
 
             #If both listings are for >=1 key
@@ -257,7 +259,7 @@ def background_task(url):
     print('called')
     local_socketio = SocketIO(app, logger=True, engineio_logger=True, message_queue=url)
     while True:
-        f = json.load(open(pathToPricelist + '/pricelist.json', 'r'))
+        f = json.load(open(config.pathToPricelist + '/pricelist.json', 'r'))
         for i in f:
             price = getPrice(i)
             local_socketio.emit('price', price)
@@ -281,10 +283,6 @@ def itemprices(sku):
     price = getPrice(sku)
     print('Price requested for ' + tf2.getNameFromSku(sku) + ', returned ' + str(price))
     return json.dumps(price)
-
-@app.route('/')
-def start_background_thread():  
-    background_task('redis://localhost:6379')
 
 
 if __name__ == '__main__':
