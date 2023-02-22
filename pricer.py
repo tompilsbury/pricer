@@ -235,10 +235,10 @@ def getPrice(sku):
 
 
     #Buying for more than selling, get a cheaper buy price (sell price has priority)
-    if buy['keys'] > sell['keys']:
+    while buy['keys'] > sell['keys']:
         buy = getBuy(buyListings.pop())
-    elif buy['keys'] == sell['keys']:
-        if buy['metal'] >= sell['metal']:
+    if buy['keys'] == sell['keys']:
+        while buy['metal'] >= sell['metal']:
             buy = getBuy(buyListings.pop())
             
     #This was a solution to previous error. Leaving in for now just in case.
