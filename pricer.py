@@ -1,12 +1,14 @@
 from flask import Flask
 from flask_socketio import SocketIO
+from flask_apscheduler import APScheduler
 import time
 import json
 import math
 from urllib import parse, request
 from tf2utilities.main import TF2
 import eventlet
-from celery import Celery
+import traceback
+
 
 #import config file
 import config
@@ -16,12 +18,10 @@ tf2 = TF2(config.steamApiKey).schema
 
 eventlet.monkey_patch(socket=True)
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True, message_queue='redis://' + config.redisURL)
-
-celery = Celery(app.name, broker='redis://' + config.redisURL)
-celery.conf.update(app.config)
 
 item = {
     "success": True,
@@ -249,22 +249,26 @@ def getPrice(sku):
     price = (Price(buy, sell, name, sku)).get_json()
     return price
 
-@socketio.on('connect')
-def connect():
-    print('Client Connected')
-    background_task('redis://localhost:6379')
-
-@celery.task()
 def background_task(url):
     print('called')
     local_socketio = SocketIO(app, logger=True, engineio_logger=True, message_queue=url)
-    while True:
-        f = json.load(open(config.pathToPricelist + '/pricelist.json', 'r'))
-        for i in f:
+    f = json.load(open(config.pathToPricelist + '/pricelist.json', 'r'))
+    for i in f:
+        try:
             price = getPrice(i)
             local_socketio.emit('price', price)
-            local_socketio.sleep(3)
-        local_socketio.sleep(1800)
+            local_socketio.sleep(2)
+        except:
+            traceback.print_exc()
+
+    
+#schedule.every(60).seconds.do(background_task)
+
+
+@socketio.on('connect')
+def connect():
+    print('Client Connected')
+
 
 @socketio.on('disconnect')
 def disconnect():
@@ -286,4 +290,7 @@ def itemprices(sku):
 
 
 if __name__ == '__main__':
+    scheduler = APScheduler()
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
+    scheduler.start()
     socketio.run(app, debug=True)
