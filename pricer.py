@@ -257,7 +257,7 @@ def background_task(url):
         try:
             price = getPrice(i)
             local_socketio.emit('price', price)
-            local_socketio.sleep(2)
+            local_socketio.sleep(3)
         except:
             traceback.print_exc()
 
