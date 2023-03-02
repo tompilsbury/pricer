@@ -72,9 +72,19 @@ def getPrice(sku):
     #Append only bot listings to the stacks
     for i in listings:
         if i['intent'] == 'sell' and 'userAgent' in i:
-            sellListings.append(i)
+            if i['steamid'] == config.botSteamID:
+                continue
+            elif 'usd' in i['currencies']:
+                continue
+            else:
+                sellListings.append(i)
         elif 'userAgent' in i:
-            buyListings.append(i)
+            if i['steamid'] == config.botSteamID:
+                continue
+            elif 'usd' in i['currencies']:
+                continue
+            else:
+                buyListings.append(i)
     
     #Reverse so best prices are at the tops of the stacks.
     sellListings.reverse()
@@ -89,12 +99,6 @@ def getPrice(sku):
 
         if len(buyListings) > 1:
             y = buyListings.pop()
-            if first['steamid'] == config.botSteamID:
-                return getBuy(x,y)
-            if y['steamid'] == config.botSteamID:
-                return getBuy(first, x)
-            if x['steamid'] == config.botSteamID:
-                return getBuy(first, y)
 
             #If both listings are for >=1 key
             if 'keys' in first['currencies'] and 'keys' in x['currencies'] and 'keys' in y['currencies']:
@@ -168,12 +172,6 @@ def getPrice(sku):
 
         if len(sellListings) > 1:
             y = sellListings.pop()
-            if first['steamid'] == config.botSteamID:
-                return getSell(x,y)
-            if y['steamid'] == config.botSteamID:
-                return getSell(first, x)
-            if x['steamid'] == config.botSteamID:
-                return getSell(first, y)
 
             #If both listings are for >=1 key
             if 'keys' in first['currencies'] and 'keys' in x['currencies'] and 'keys' in y['currencies']:
@@ -241,6 +239,7 @@ def getPrice(sku):
 
         #len(sellListings) < 1
         else:
+            print('HERE')
             if 'metal' in first['currencies']:
                 sell['metal'] = first['currencies']['metal']
             if 'keys' in first['currencies']:
@@ -281,11 +280,6 @@ def getPrice(sku):
     else:
         print("ERROR GETTING PRICE FOR " + sku)
         return
-
-
-
-
-
 
     if len(sellListings) >= 3:
         firstSell = sellListings.pop()
