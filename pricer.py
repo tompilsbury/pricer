@@ -115,8 +115,10 @@ def getPrice(sku):
                         buy['metal'] = 0
                 
                 elif (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) > (y['currencies']['keys']):
-                    buy['keys'] = y['currencies']['keys']
-                    buy['metal'] = y['currencies']['metal']
+                    if 'metal' in y['currencies']:
+                        buy['metal'] = y['currencies']['metal']
+                    if 'keys' in y['currencies']:
+                        buy['keys'] = y['currencies']['keys']
                 
                 elif (first['currencies']['keys']) > (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
                     return getBuy(x,y)
@@ -125,8 +127,10 @@ def getPrice(sku):
                     return getBuy(x,y)
                 
                 else:
-                    buy['keys'] = y['currencies']['keys']
-                    buy['metal'] = y['currencies']['metal']
+                    if 'metal' in y['currencies']:
+                        buy['metal'] = y['currencies']['metal']
+                    if 'keys' in y['currencies']:
+                        buy['keys'] = y['currencies']['keys']
             
             elif 'keys' in first['currencies'] and 'keys' in x['currencies']:
                 buy['keys'] = 0
@@ -190,8 +194,10 @@ def getPrice(sku):
                         sell['metal'] = 0
                 
                 elif (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) < (y['currencies']['keys']):
-                    sell['keys'] = y['currencies']['keys']
-                    sell['metal'] = y['currencies']['metal']
+                    if 'metal' in y['currencies']:
+                        sell['metal'] = y['currencies']['metal']
+                    if 'keys' in y['currencies']:
+                        sell['keys'] = y['currencies']['keys']
                 
                 elif (first['currencies']['keys']) < (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
                     return getSell(x,y)
@@ -200,8 +206,10 @@ def getPrice(sku):
                     return getSell(x,y)
                 
                 else:
-                    sell['keys'] = y['currencies']['keys']
-                    sell['metal'] = y['currencies']['metal']
+                    if 'metal' in y['currencies']:
+                        sell['metal'] = y['currencies']['metal']
+                    if 'keys' in y['currencies']:
+                        sell['keys'] = y['currencies']['keys']
             
             elif 'keys' in x['currencies'] and 'keys' in y['currencies']:
                 if x['currencies']['keys'] < y['currencies']['keys']:
