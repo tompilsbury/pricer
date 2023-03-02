@@ -26,7 +26,7 @@ socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=Tru
 item = {
     "success": True,
     "currency": None,
-    "items": [{}],
+    "items": [],
     }
 
 class Price():
@@ -46,6 +46,15 @@ class Price():
             "time": int((time.time()) * 1000)
         }
         return price
+    def get_dbObject(self):
+        obj = {
+            self.sku: {
+                "buy": self.buy,
+                "sell": self.sell,
+                "name": self.name,
+            }
+        }
+        return obj
         
 
 def getPrice(sku):
@@ -55,6 +64,7 @@ def getPrice(sku):
     url = f'https://backpack.tf/api/classifieds/listings/snapshot?token={config.bptfApiKey}&sku={parse.quote(name)}&appid=440'
     data = json.load(request.urlopen(url))
     listings = data['listings']
+
     #Initialise Listings stacks
     sellListings = []
     buyListings = []
@@ -69,161 +79,237 @@ def getPrice(sku):
     #Reverse so best prices are at the tops of the stacks.
     sellListings.reverse()
     buyListings.reverse()
-    def getBuy(first):
+    def getBuy(first, x):
         #Initialise buy dict
         buy = {
             'keys': 0,
             'metal': 0    
         }
         #Check if listing is from the bot. If it is, look at next one
-        if first['steamid'] == config.botSteamID:
-            return getBuy(buyListings.pop())
 
         if len(buyListings) > 1:
-            x = buyListings.pop()
-            #Check if listing is from the bot. If it is, look at next one
+            y = buyListings.pop()
+            if first['steamid'] == config.botSteamID:
+                return getBuy(x,y)
+            if y['steamid'] == config.botSteamID:
+                return getBuy(first, x)
             if x['steamid'] == config.botSteamID:
-                x = buyListings.pop()
+                return getBuy(first, y)
 
             #If both listings are for >=1 key
-            if 'keys' in first['currencies'] and 'keys' in x['currencies']:
-                if (first['currencies']['keys']) > (x['currencies']['keys']):
-                    #Highest buy listing is too risky to match, try again with next listing...
-                    return getBuy(x)
-                elif (first['currencies']['keys']) == (x['currencies']['keys']):
-                    #Match key price
+            if 'keys' in first['currencies'] and 'keys' in x['currencies'] and 'keys' in y['currencies']:
+                if (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
                     buy['keys'] = first['currencies']['keys']
 
-                    #If listing is for {x keys, 0 ref}, then 'currencies' won't have a 'metal' attribute, so if statements check if they exist
-                    if 'metal' in first['currencies'] and 'metal' in x['currencies']:
-                        if (first['currencies']['metal']*0.9) > (x['currencies']['metal']):
-                            #Ref price is too much greater than the next highest listing, try again with next listing...
-                            return getBuy(x)
-                        else:
+                    #Handle ref price
+                    if 'metal' in first['currencies'] and 'metal' in x['currencies'] and 'metal' in y['currencies']:
+                        if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                             buy['metal'] = first['currencies']['metal']
-                    elif 'metal' in first['currencies'] or 'metal' in x['currencies']:
-                        #Highest buy listing is too risky to match, try again with next listing...
-                        return getBuy(x)
+                        elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
+                            buy['metal'] = y['currencies']['metal']
+                        elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
+                            return getBuy(x,y)
+                        elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
+                            return getBuy(x,y)
                     else:
-                        #Neither listing is selling for metal => buy['metal'] = 0
                         buy['metal'] = 0
+                
+                elif (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) > (y['currencies']['keys']):
+                    buy['keys'] = y['currencies']['keys']
+                    buy['metal'] = y['currencies']['metal']
+                
+                elif (first['currencies']['keys']) > (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
+                    return getBuy(x,y)
 
-                #This gets called due to out-of-date bp.tf key prices. E.g highest buy listing is 9 keys 82 ref, and next highest is 10 keys (even though second listing is acutally higher price.)
-                #Here I just match the highest buy listing. Not very safe rn, needs improving.
+                elif (first['currencies']['keys']) > (x['currencies']['keys']) and (x['currencies']['keys']) > (y['currencies']['keys']):
+                    return getBuy(x,y)
+                
                 else:
-                    buy['keys'] = first['currencies']['keys']
-                    if 'metal' in first['currencies']:
-                        buy['metal'] = first['currencies']['metal']
-                    else:
-                        buy['metal'] = 0
+                    buy['keys'] = y['currencies']['keys']
+                    buy['metal'] = y['currencies']['metal']
             
-            #One listing is for a key, one isn't. Highest buy listing is too risky to match, try again with next listing...
-            elif 'keys' in first['currencies'] or 'keys' in x['currencies']:
-                return getBuy(x)
-
-            #Deal with lower tier items (not buy for keys, only ref)
+            elif 'keys' in first['currencies'] and 'keys' in x['currencies']:
+                buy['keys'] = 0
+                buy['metal'] = y['currencies']['metal']
+            elif 'keys' in first['currencies']:
+                return getBuy(x,y)
             else:
-                if 'metal' in first['currencies'] and 'metal' in x['currencies']:
-                    if (first['currencies']['metal']*0.9) > (x['currencies']['metal']):
-                        #Ref price is too much greater than the next highest listing, try again with next listing...
-                        return getBuy(x)
-                    else:
+                if 'metal' in first['currencies'] and 'metal' in x['currencies'] and 'metal' in y['currencies']:
+                    if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                         buy['metal'] = first['currencies']['metal']
+                    elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
+                        buy['metal'] = y['currencies']['metal']
+                    elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
+                        return getBuy(x,y)
+                    elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
+                        return getBuy(x,y)
                 else:
-                    return None
-        
-        #Only 1 bot buy listing, match it.
-        elif len(buyListings) == 1:
-            x = buyListings.pop()
-            if 'metal' in x['currencies']:
-                buy['metal'] = x['currencies']['metal']
-            if 'keys' in x['currencies']:
-                buy['keys'] = x['currencies']['keys']
+                    buy['metal'] = 0
+
+        #len(buyListings) < 1
         else:
-            return None
+            if 'metal' in first['currencies']:
+                buy['metal'] = first['currencies']['metal']
+            if 'keys' in first['currencies']:
+                buy['keys'] = first['currencies']['keys']
         return buy
-    
-    def getSell(first):
+            
+    def getSell(first,x):
         #Initialise sell dict
         sell = {
             'keys': 0,
             'metal': 0    
         }
         #Check if listing is from the bot. If it is, look at next one
-        if first['steamid'] == config.botSteamID:
-            return getSell(sellListings.pop())
 
         if len(sellListings) > 1:
-            x = sellListings.pop()
-            #Check if listing is from the bot. If it is, look at next one
+            y = sellListings.pop()
+            if first['steamid'] == config.botSteamID:
+                return getSell(x,y)
+            if y['steamid'] == config.botSteamID:
+                return getSell(first, x)
             if x['steamid'] == config.botSteamID:
-                x = sellListings.pop()
+                return getSell(first, y)
 
             #If both listings are for >=1 key
-            if 'keys' in first['currencies'] and 'keys' in x['currencies']:
-                if (first['currencies']['keys']) < (x['currencies']['keys']):
-                    #Cheapest sell listing is too risky to match, try again with next listing...
-                    return getSell(x)
-                elif (first['currencies']['keys']) == (x['currencies']['keys']):
-                    #Match key price
+            if 'keys' in first['currencies'] and 'keys' in x['currencies'] and 'keys' in y['currencies']:
+                if (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
                     sell['keys'] = first['currencies']['keys']
-                    
-                    #If listing is for {x keys, 0 ref}, then 'currencies' won't have a 'metal' attribute, so if statements check if they exist
-                    if 'metal' in first['currencies'] and 'metal' in x['currencies']:
-                        if (first['currencies']['metal']) > (x['currencies']['metal']*1.1):
-                            #Ref price is too much lower than the next cheapest listing, try again with next listing...
-                            return getSell(x)
-                        else:
-                            #Match listing price
+
+                    #Handle ref price
+                    if 'metal' in first['currencies'] and 'metal' in x['currencies'] and 'metal' in y['currencies']:
+                        if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                             sell['metal'] = first['currencies']['metal']
-            
-                    elif 'metal' in first['currencies'] or 'metal' in x['currencies']:
-                        #Cheapest sell listing is too risky to match, try again with next listing...
-                        return getSell(x)
+                        elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
+                            sell['metal'] = y['currencies']['metal']
+                        elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
+                            return getSell(x,y)
+                        elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
+                            return getSell(x,y)
                     else:
-                        #Neither listing is selling for metal => sell['metal'] = 0
                         sell['metal'] = 0
                 
-                #This gets called due to out-of-date bp.tf key prices. E.g cheapest sell listing is 10 keys, and next cheapest is 9 keys 82 ref (even though second listing is acutally cheaper.)
+                elif (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) < (y['currencies']['keys']):
+                    sell['keys'] = y['currencies']['keys']
+                    sell['metal'] = y['currencies']['metal']
+                
+                elif (first['currencies']['keys']) < (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
+                    return getSell(x,y)
+
+                elif (first['currencies']['keys']) < (x['currencies']['keys']) and (x['currencies']['keys']) < (y['currencies']['keys']):
+                    return getSell(x,y)
+                
                 else:
-                    sell['keys'] = first['currencies']['keys']
-                    if 'metal' in first['currencies']:
-                        sell['metal'] = first['currencies']['metal']
+                    sell['keys'] = y['currencies']['keys']
+                    sell['metal'] = y['currencies']['metal']
+            
+            elif 'keys' in x['currencies'] and 'keys' in y['currencies']:
+                if x['currencies']['keys'] < y['currencies']['keys']:
+                    return getSell(x,y)
+                else:
+                    sell['keys'] = x['currencies']['keys']
+                    if 'metal' in x['currencies'] and 'metal' in y['currencies']:
+                        if x['currencies']['metal'] > y['currencies']['metal']*1.05:
+                            return getSell(x,y)
+                        else:
+                            sell['metal'] = x['currencies']['metal']
                     else:
-                        sell['metal'] = 0
-
-            #One listing is for a key, one isn't. Cheapest sell listing is too risky to match, try again with next listing...
-            elif 'keys' in first['currencies'] or 'keys' in x['currencies']:
-                return getSell(x)
-
-            #Deal with lower tier items (not buy for keys, only ref)
+                        return getSell(x,y)
+            elif 'keys' in y['currencies']:
+                return getSell(x,y)
             else:
-                if 'metal' in first['currencies'] and 'metal' in x['currencies']:
-                    if (first['currencies']['metal']) > (x['currencies']['metal']*1.1):
-                        #Cheapest sell listing is too risky to match, try again with next listing...
-                        return getSell(x)
-                    else:
+                #Handle ref price
+                if 'metal' in first['currencies'] and 'metal' in x['currencies'] and 'metal' in y['currencies']:
+                    if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                         sell['metal'] = first['currencies']['metal']
+                    elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
+                        sell['metal'] = y['currencies']['metal']
+                    elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
+                        return getSell(x,y)
+                    elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
+                        return getSell(y, sellListings.pop())
                 else:
-                    return None
-            return sell
-        
-        #Only 1 bot buy listing, match it.
-        elif len(sellListings) == 1:
-            x = sellListings.pop()
-            if 'metal' in x['currencies']:
-                sell['metal'] = x['currencies']['metal']
-            if 'keys' in x['currencies']:
-                sell['keys'] = x['currencies']['keys']
+                    sell['metal'] = 0
+
+        #len(sellListings) < 1
         else:
-            return None
+            if 'metal' in first['currencies']:
+                sell['metal'] = first['currencies']['metal']
+            if 'keys' in first['currencies']:
+                sell['keys'] = first['currencies']['keys']
+        return sell
 
     #Call pricing functions with listings at the top of the stacks
-    buy = getBuy(buyListings.pop())
-    sell = getSell(sellListings.pop())
+    if len(buyListings) >= 3:
+        firstBuy = buyListings.pop()
+        buy = getBuy(firstBuy, buyListings.pop())
+    elif len(buyListings) == 2:
+        buy = {
+            'keys': 0,
+            'metal': 0    
+        }
+        x = buyListings.pop()
+        y = buyListings.pop()
+        if 'keys' in x['currencies'] and 'keys' in y['currencies']:
+            buy['keys'] = x['currencies']['keys']
+        else:
+            buy['keys'] = 0
+            
+        if 'metal' in x['currencies']: 
+            buy['metal'] = x['currencies']['metal']
+        else:
+            #Neither listing is selling for metal => buy['metal'] = 0
+            buy['metal'] = 0
+    elif len(buyListings) == 1:
+        buy = {
+            'keys': 0,
+            'metal': 0    
+        }
+        x = buyListings.pop()
+        if 'keys' in x['currencies']:
+            buy['keys'] = x['currencies']['keys']
+        if 'metal' in x['currencies']:
+            buy['metal'] = x['currencies']['metal']
+    else:
+        print("ERROR GETTING PRICE FOR " + sku)
+        return
 
-    #If there are no bot sell listings, then just sell for 1.2x the buy price. If there are no buy listings, bot won't price it
-    if sell == None:
+
+
+
+
+
+    if len(sellListings) >= 3:
+        firstSell = sellListings.pop()
+        sell = getSell(firstSell, sellListings.pop())
+    elif len(sellListings) == 2:
+        sell = {
+            'keys': 0,
+            'metal': 0    
+        }
+        x = sellListings.pop()
+        if 'keys' in x['currencies']:
+            sell['keys'] = x['currencies']['keys']
+        else:
+            sell['keys'] = 0
+            
+        if 'metal' in x['currencies']: 
+            sell['metal'] = x['currencies']['metal']
+        else:
+            #Neither listing is selling for metal => buy['metal'] = 0
+            sell['metal'] = 0
+    elif len(buyListings) == 1:
+        sell = {
+            'keys': 0,
+            'metal': 0    
+        }
+        x = sellListings.pop()
+        if 'keys' in x['currencies']:
+            sell['keys'] = x['currencies']['keys']
+        if 'metal' in x['currencies']:
+            sell['metal'] = x['currencies']['metal']
+    else:
+        #If there are no bot sell listings, then just sell for 1.2x the buy price. If there are no buy listings, bot won't price it
         key = math.ceil(buy['keys'] * 1.2)
         sell = {
             "keys": key,
@@ -236,17 +322,18 @@ def getPrice(sku):
 
     #Buying for more than selling, get a cheaper buy price (sell price has priority)
     while buy['keys'] > sell['keys']:
-        buy = getBuy(buyListings.pop())
+        buy = getBuy(buyListings.pop(), buyListings.pop())
     if buy['keys'] == sell['keys']:
         while buy['metal'] >= sell['metal']:
-            buy = getBuy(buyListings.pop())
+            buy = getBuy(buyListings.pop(), buyListings.pop())
             
     #This was a solution to previous error. Leaving in for now just in case.
     if sell == {'keys': 0,'metal': 0}:
         print('ERROR GETTING PRICE FOR SKU: ' + sku)
         return None
     
-    price = (Price(buy, sell, name, sku)).get_json()
+    x = Price(buy, sell, name, sku)
+    price = (x).get_json()
     return price
 
 def background_task(url):
@@ -259,6 +346,7 @@ def background_task(url):
             local_socketio.emit('price', price)
             local_socketio.sleep(3)
         except:
+            print("ERROR GETTING PRICE FOR "+ str(i))
             traceback.print_exc()
 
     
@@ -291,6 +379,6 @@ def itemprices(sku):
 
 if __name__ == '__main__':
     scheduler = APScheduler()
-    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=5)
     scheduler.start()
     socketio.run(app, debug=True)
