@@ -348,6 +348,7 @@ def background_task(url):
         except:
             print("ERROR GETTING PRICE FOR "+ str(i))
             traceback.print_exc()
+        
 
     
 #schedule.every(60).seconds.do(background_task)
@@ -379,6 +380,6 @@ def itemprices(sku):
 
 if __name__ == '__main__':
     scheduler = APScheduler()
-    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=5)
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
     scheduler.start()
     socketio.run(app, debug=True)
