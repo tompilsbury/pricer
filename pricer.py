@@ -104,17 +104,29 @@ def getPrice(sku):
             if 'keys' in first['currencies'] and 'keys' in x['currencies'] and 'keys' in y['currencies']:
                 if (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
                     buy['keys'] = first['currencies']['keys']
+                    print(buy['keys'])
 
                     #Handle ref price
                     if 'metal' in first['currencies'] and 'metal' in x['currencies'] and 'metal' in y['currencies']:
                         if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                             buy['metal'] = first['currencies']['metal']
                         elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
-                            buy['metal'] = y['currencies']['metal']
+                            if round( (x['currencies']['metal'] - y['currencies']['metal']), 2) > 0.11:
+                                buy['metal'] = y['currencies']['metal']
+                            else:                             
+                                buy['metal'] = x['currencies']['metal']
                         elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
-                            return getBuy(x,y)
+                            if round( (first['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                                return getBuy(x,y)
+                            else:
+                                buy['metal'] = first['currencies']['metal']
                         elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
-                            return getBuy(x,y)
+                            if round( (first['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                                return getBuy(x,y)
+                            elif round( (x['currencies']['metal'] - y['currencies']['metal']), 2) > 0.11:
+                                return getBuy(x,y)
+                            else:
+                                buy['metal'] = x['currencies']['metal']
                     else:
                         buy['metal'] = 0
                 
@@ -146,11 +158,22 @@ def getPrice(sku):
                     if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                         buy['metal'] = first['currencies']['metal']
                     elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
-                        buy['metal'] = y['currencies']['metal']
+                        if round( (x['currencies']['metal'] - y['currencies']['metal']), 2) > 0.11:
+                            buy['metal'] = y['currencies']['metal']
+                        else:                             
+                            buy['metal'] = x['currencies']['metal']
                     elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
-                        return getBuy(x,y)
+                        if round( (first['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                            return getBuy(x,y)
+                        else:
+                            buy['metal'] = first['currencies']['metal']
                     elif (first['currencies']['metal']) > (x['currencies']['metal']) and (x['currencies']['metal']) > (y['currencies']['metal']):
-                        return getBuy(x,y)
+                        if round( (first['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                            return getBuy(x,y)
+                        elif round( (x['currencies']['metal'] - y['currencies']['metal']), 2) > 0.11:
+                            return getBuy(x,y)
+                        else:
+                            buy['metal'] = x['currencies']['metal']
                 else:
                     buy['metal'] = 0
 
@@ -160,7 +183,7 @@ def getPrice(sku):
                 buy['metal'] = first['currencies']['metal']
             if 'keys' in first['currencies']:
                 buy['keys'] = first['currencies']['keys']
-        return buy
+        return buy, x, y
             
     def getSell(first,x):
         #Initialise sell dict
@@ -183,11 +206,22 @@ def getPrice(sku):
                         if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                             sell['metal'] = first['currencies']['metal']
                         elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
-                            sell['metal'] = y['currencies']['metal']
+                            if round( (y['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                                sell['metal'] = y['currencies']['metal']
+                            else:                             
+                                sell['metal'] = x['currencies']['metal']
                         elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
-                            return getSell(x,y)
+                            if round( (x['currencies']['metal'] - first['currencies']['metal']), 2) > 0.11:
+                                return getSell(x,y)
+                            else:
+                                sell['metal'] = first['currencies']['metal']
                         elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
-                            return getSell(x,y)
+                            if round( (x['currencies']['metal'] - first['currencies']['metal']), 2) > 0.11:
+                                return getSell(x,y)
+                            elif round( (y['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                                return getSell(x,y)
+                            else:
+                                sell['metal'] = x['currencies']['metal']
                     else:
                         sell['metal'] = 0
                 
@@ -229,11 +263,22 @@ def getPrice(sku):
                     if (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
                         sell['metal'] = first['currencies']['metal']
                     elif (first['currencies']['metal']) == (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
-                        sell['metal'] = y['currencies']['metal']
+                        if round( (y['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                            sell['metal'] = y['currencies']['metal']
+                        else:                             
+                            sell['metal'] = x['currencies']['metal']
                     elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) == (y['currencies']['metal']):
-                        return getSell(x,y)
+                        if round( (x['currencies']['metal'] - first['currencies']['metal']), 2) > 0.11:
+                            return getSell(x,y)
+                        else:
+                            sell['metal'] = first['currencies']['metal']
                     elif (first['currencies']['metal']) < (x['currencies']['metal']) and (x['currencies']['metal']) < (y['currencies']['metal']):
-                        return getSell(y, sellListings.pop())
+                        if round( (x['currencies']['metal'] - first['currencies']['metal']), 2) > 0.11:
+                            return getSell(x,y)
+                        elif round( (y['currencies']['metal'] - x['currencies']['metal']), 2) > 0.11:
+                            return getSell(x,y)
+                        else:
+                            sell['metal'] = x['currencies']['metal']
                 else:
                     sell['metal'] = 0
 
@@ -244,12 +289,12 @@ def getPrice(sku):
                 sell['metal'] = first['currencies']['metal']
             if 'keys' in first['currencies']:
                 sell['keys'] = first['currencies']['keys']
-        return sell
+        return sell, x, y
 
     #Call pricing functions with listings at the top of the stacks
     if len(buyListings) >= 3:
         firstBuy = buyListings.pop()
-        buy = getBuy(firstBuy, buyListings.pop())
+        buy, xBuy ,yBuy = getBuy(firstBuy, buyListings.pop())
     elif len(buyListings) == 2:
         buy = {
             'keys': 0,
@@ -283,7 +328,7 @@ def getPrice(sku):
 
     if len(sellListings) >= 3:
         firstSell = sellListings.pop()
-        sell = getSell(firstSell, sellListings.pop())
+        sell, xSell ,ySell = getSell(firstSell, sellListings.pop())
     elif len(sellListings) == 2:
         sell = {
             'keys': 0,
@@ -318,16 +363,16 @@ def getPrice(sku):
             "metal": 0
         }
 
-    sell['metal'] = math.floor(sell['metal']*100)/100
-    buy['metal'] = math.floor(buy['metal']*100)/100
+    buy['metal'] = round(buy['metal'],2)
+    sell['metal'] = round(sell['metal'],2)
 
 
     #Buying for more than selling, get a cheaper buy price (sell price has priority)
     while buy['keys'] > sell['keys']:
-        buy = getBuy(buyListings.pop(), buyListings.pop())
+        buy,xBuy,yBuy = getBuy(xBuy, yBuy)
     if buy['keys'] == sell['keys']:
         while buy['metal'] >= sell['metal']:
-            buy = getBuy(buyListings.pop(), buyListings.pop())
+            buy, xBuy ,yBuy = getBuy(xBuy, yBuy)
             
     #This was a solution to previous error. Leaving in for now just in case.
     if sell == {'keys': 0,'metal': 0}:
