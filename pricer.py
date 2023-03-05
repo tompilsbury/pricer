@@ -126,7 +126,7 @@ def getPrice(sku):
                                 return getBuy(x,y)
                             else:
                                 buy['metal'] = x['currencies']['metal']
-                    elif 'metal' in x['currencies'] and y['currencies']:
+                    elif 'metal' in x['currencies'] and 'metal' in y['currencies']:
                         if x['currencies']['metal'] - y['currencies']['metal'] > 0.11:
                             return getBuy(x,y)
                         else:
@@ -225,7 +225,7 @@ def getPrice(sku):
                                 return getSell(x,y)
                             else:
                                 sell['metal'] = x['currencies']['metal']
-                    elif 'metal' in x['currencies'] and y['currencies']:
+                    elif 'metal' in x['currencies'] and 'metal' in y['currencies']:
                         if y['currencies']['metal'] - x['currencies']['metal'] > 0.11:
                             return getSell(x,y)
                         else:
