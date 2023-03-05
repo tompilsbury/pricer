@@ -104,7 +104,6 @@ def getPrice(sku):
             if 'keys' in first['currencies'] and 'keys' in x['currencies'] and 'keys' in y['currencies']:
                 if (first['currencies']['keys']) == (x['currencies']['keys']) and (x['currencies']['keys']) == (y['currencies']['keys']):
                     buy['keys'] = first['currencies']['keys']
-                    print(buy['keys'])
 
                     #Handle ref price
                     if 'metal' in first['currencies'] and 'metal' in x['currencies'] and 'metal' in y['currencies']:
@@ -284,7 +283,6 @@ def getPrice(sku):
 
         #len(sellListings) < 1
         else:
-            print('HERE')
             if 'metal' in first['currencies']:
                 sell['metal'] = first['currencies']['metal']
             if 'keys' in first['currencies']:
