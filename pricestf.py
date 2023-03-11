@@ -2,6 +2,7 @@ import requests
 import math
 
 
+
 def getApiToken() -> str:
     endpoint = 'https://api2.prices.tf/auth/access'
 
@@ -37,3 +38,4 @@ def getPricesTFPrice(sku):
         return price
     else:
         print("ERROR getting prices.tf price, response: " + response.json())
+        return None

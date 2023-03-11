@@ -1,11 +1,16 @@
+import eventlet
+from eventlet import hubs
+eventlet.monkey_patch()
+hubs.use_hub('poll')
 from flask import Flask
 from flask_socketio import SocketIO
 from flask_apscheduler import APScheduler
 import time
 import json
-from urllib import parse, request
 from tf2utilities.main import TF2
+from urllib import parse, request
 import traceback
+
 
 from pricestf import getPricesTFPrice
 
@@ -13,8 +18,6 @@ from pricestf import getPricesTFPrice
 import config
 
 tf2 = TF2(config.steamApiKey).schema
-
-#eventlet.monkey_patch(socket=True)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
