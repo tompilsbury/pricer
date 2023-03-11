@@ -9,15 +9,14 @@ from tf2utilities.main import TF2
 import eventlet
 import traceback
 
+from pricestf import getPricesTFPrice
 
 #import config file
 import config
 
-
 tf2 = TF2(config.steamApiKey).schema
 
-eventlet.monkey_patch(socket=True)
-
+#eventlet.monkey_patch(socket=True)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -417,9 +416,8 @@ def getPrice(sku):
         if 'metal' in x['currencies']:
             buy['metal'] = x['currencies']['metal']
     else:
-        #No bot listings. Return error.
-        print("ERROR GETTING PRICE FOR " + sku)
-        return
+        #If there are no bot buy listings, buy price will be obtained from prices.tf api
+        buy = getPricesTFPrice(sku)['buy']
 
     if len(sellListings) >= 3:
         #3 bot sell listings or more, call getSell function
@@ -456,12 +454,8 @@ def getPrice(sku):
         if 'metal' in x['currencies']:
             sell['metal'] = x['currencies']['metal']
     else:
-        #If there are no bot sell listings, then just sell for 1.2x the buy price. If there are no buy listings, bot won't price it
-        key = math.ceil(buy['keys'] * 1.2)
-        sell = {
-            "keys": key,
-            "metal": 0
-        }
+        #If there are no bot sell listings, sell price will be obtained from prices.tf api
+        sell = getPricesTFPrice(sku)['sell']
 
     #Rounds the metal to 2.d.p (just in case of dodgy prices)
     buy['metal'] = round(buy['metal'],2)
@@ -477,8 +471,7 @@ def getPrice(sku):
             
     #This was a solution to previous error. Leaving in for now just in case.
     if sell == {'keys': 0,'metal': 0}:
-        print('ERROR GETTING PRICE FOR SKU: ' + sku)
-        return None
+        sell = getPricesTFPrice(sku)['sell']
     
     #Convert price to json object that the socket can emit.
     x = Price(buy, sell, name, sku)
@@ -527,9 +520,13 @@ def itemprices(sku):
     print('Price requested for ' + tf2.getNameFromSku(sku) + ', returned ' + str(price))
     return json.dumps(price)
 
+@app.route('/pricestf/<string:sku>')
+def pricestf(sku):
+    price = getPricesTFPrice(sku)
+    return json.dumps(price)
 
 if __name__ == '__main__':
     scheduler = APScheduler()
-    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=1)
     scheduler.start()
     socketio.run(app, debug=True)
