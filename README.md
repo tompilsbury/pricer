@@ -1,7 +1,7 @@
 # Custom pricer for tf2autobot
 ***USE AT OWN RISK OF ITEMS***
 
-This is a pricer written in Python that uses Flask, Flask-socketio, Redis and Celery.
+This is a pricer written in Python that uses Flask, Flask-socketio and Redis.
 
 ## Requirements/Setup
 1. Install Redis on local machine
