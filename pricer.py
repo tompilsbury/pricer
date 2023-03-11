@@ -525,6 +525,6 @@ def pricestf(sku):
 
 if __name__ == '__main__':
     scheduler = APScheduler()
-    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=1)
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
     scheduler.start()
     socketio.run(app, debug=True)
