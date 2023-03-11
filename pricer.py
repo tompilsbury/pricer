@@ -3,10 +3,8 @@ from flask_socketio import SocketIO
 from flask_apscheduler import APScheduler
 import time
 import json
-import math
 from urllib import parse, request
 from tf2utilities.main import TF2
-import eventlet
 import traceback
 
 from pricestf import getPricesTFPrice
