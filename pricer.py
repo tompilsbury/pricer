@@ -57,6 +57,15 @@ class Price():
 def getPrice(sku):
     #Convert to name from sku
     name = tf2.getNameFromSku(sku)
+    if sku == '5021;6':
+        keyPrice = getPricesTFPrice(sku)
+        buy = keyPrice['buy']
+        sell = keyPrice['sell']
+        x = Price(buy, sell, name, sku)
+        price = (x).get_json()
+
+        return price
+
     #Get item listing data from bptf api
     url = f'https://backpack.tf/api/classifieds/listings/snapshot?token={config.bptfApiKey}&sku={parse.quote(name)}&appid=440'
     data = json.load(request.urlopen(url))
@@ -491,14 +500,9 @@ def background_task(url):
             traceback.print_exc()
         
 
-    
-#schedule.every(60).seconds.do(background_task)
-
-
 @socketio.on('connect')
 def connect():
     print('Client Connected')
-
 
 @socketio.on('disconnect')
 def disconnect():
@@ -514,8 +518,11 @@ def items():
 
 @app.route('/items/<string:sku>', methods=['GET', 'POST'])
 def itemprices(sku):
-    price = getPrice(sku)
-    print('Price requested for ' + tf2.getNameFromSku(sku) + ', returned ' + str(price))
+    if sku == '5021;6':
+        price = getPricesTFPrice(sku)
+    else:
+        price = getPrice(sku)
+        print('Price requested for ' + tf2.getNameFromSku(sku) + ', returned ' + str(price))
     return json.dumps(price)
 
 @app.route('/pricestf/<string:sku>')
