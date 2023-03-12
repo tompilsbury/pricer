@@ -23,6 +23,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True, message_queue='redis://' + config.redisURL)
 
+
 item = {
     "success": True,
     "currency": None,
@@ -468,8 +469,8 @@ def getPrice(sku):
         sell = getPricesTFPrice(sku)['sell']
 
     #Rounds the metal to 2.d.p (just in case of dodgy prices)
-    buy['metal'] = round(buy['metal'],2)
-    sell['metal'] = round(sell['metal'],2)
+    # buy['metal'] = round(buy['metal'],2)
+    # sell['metal'] = round(sell['metal'],2)
 
 
     #Buying for more than selling, get a cheaper buy price (sell price has priority)
@@ -490,13 +491,13 @@ def getPrice(sku):
     return price
 
 def background_task(url):
-    print('called')
     local_socketio = SocketIO(app, logger=True, engineio_logger=True, message_queue=url)
     f = json.load(open(config.pathToPricelist + '/pricelist.json', 'r'))
     for i in f:
         try:
             price = getPrice(i)
             local_socketio.emit('price', price)
+            print(f'Emitted {price}')
             local_socketio.sleep(3)
         except:
             print("ERROR GETTING PRICE FOR "+ str(i))
