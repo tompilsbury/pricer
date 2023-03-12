@@ -1,10 +1,14 @@
+import eventlet
+from eventlet import hubs
+eventlet.monkey_patch()
+hubs.use_hub('poll')
 from flask import Flask
 from flask_socketio import SocketIO
 from flask_apscheduler import APScheduler
 import time
 import json
-from urllib import parse, request
 from tf2utilities.main import TF2
+import requests
 import traceback
 
 from pricestf import getPricesTFPrice
@@ -13,8 +17,6 @@ from pricestf import getPricesTFPrice
 import config
 
 tf2 = TF2(config.steamApiKey).schema
-
-#eventlet.monkey_patch(socket=True)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -57,10 +59,24 @@ class Price():
 def getPrice(sku):
     #Convert to name from sku
     name = tf2.getNameFromSku(sku)
+    if sku == '5021;6':
+        keyPrice = getPricesTFPrice(sku)
+        buy = keyPrice['buy']
+        sell = keyPrice['sell']
+        x = Price(buy, sell, name, sku)
+        price = (x).get_json()
+
+        return price
+
     #Get item listing data from bptf api
-    url = f'https://backpack.tf/api/classifieds/listings/snapshot?token={config.bptfApiKey}&sku={parse.quote(name)}&appid=440'
-    data = json.load(request.urlopen(url))
-    listings = data['listings']
+    url = 'https://backpack.tf/api/classifieds/listings/snapshot'
+    params = {"token": config.bptfApiKey}
+    data = {
+        "sku": name,
+        "appid": 440
+    }
+    res = requests.get(url, params=params, data=data)
+    listings = res.json()['listings']
 
     #Initialise Listings stacks
     sellListings = []
@@ -491,14 +507,9 @@ def background_task(url):
             traceback.print_exc()
         
 
-    
-#schedule.every(60).seconds.do(background_task)
-
-
 @socketio.on('connect')
 def connect():
     print('Client Connected')
-
 
 @socketio.on('disconnect')
 def disconnect():
@@ -514,8 +525,11 @@ def items():
 
 @app.route('/items/<string:sku>', methods=['GET', 'POST'])
 def itemprices(sku):
-    price = getPrice(sku)
-    print('Price requested for ' + tf2.getNameFromSku(sku) + ', returned ' + str(price))
+    if sku == '5021;6':
+        price = getPricesTFPrice(sku)
+    else:
+        price = getPrice(sku)
+        print('Price requested for ' + tf2.getNameFromSku(sku) + ', returned ' + str(price))
     return json.dumps(price)
 
 @app.route('/pricestf/<string:sku>')
@@ -525,6 +539,6 @@ def pricestf(sku):
 
 if __name__ == '__main__':
     scheduler = APScheduler()
-    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=1)
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
     scheduler.start()
     socketio.run(app, debug=True)

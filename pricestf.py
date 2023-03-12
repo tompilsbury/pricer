@@ -37,3 +37,4 @@ def getPricesTFPrice(sku):
         return price
     else:
         print("ERROR getting prices.tf price, response: " + response.json())
+        return None
