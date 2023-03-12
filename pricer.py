@@ -162,7 +162,7 @@ def getPrice(sku):
                         if x['currencies']['metal'] - y['currencies']['metal'] > 0.11:
                             return getBuy(x,y)
                         else:
-                            buy['metal'] = x['currencies']
+                            buy['metal'] = x['currencies']['metal']
 
                     #None of the listings are for any metal (and for same amount of keys). E.g 1st=23keys, 2nd=23keys, 3rd=23keys. -> buy['metal'] = 0
                     else:
@@ -300,7 +300,7 @@ def getPrice(sku):
                         if y['currencies']['metal'] - x['currencies']['metal'] > 0.11:
                             return getSell(x,y)
                         else:
-                            sell['metal'] = x['currencies']
+                            sell['metal'] = x['currencies']['metal']
 
                     #None of the listings are for any metal (and are for the same amount of keys). E.g 1st=23keys, 2nd=23keys, 3rd=23keys. -> sell['metal'] = 0
                     else:
@@ -469,6 +469,7 @@ def getPrice(sku):
     else:
         #If there are no bot sell listings, sell price will be obtained from prices.tf api
         sell = getPricesTFPrice(sku)['sell']
+        print('test')
 
     #Buying for more than selling, get a cheaper buy price (sell price has priority)
     while buy['keys'] > sell['keys']:
@@ -477,9 +478,6 @@ def getPrice(sku):
         while buy['metal'] >= sell['metal']:
             buy, xBuy ,yBuy = getBuy(xBuy, yBuy)
             
-    #This was a solution to previous error. Leaving in for now just in case.
-    if sell == {'keys': 0,'metal': 0}:
-        sell = getPricesTFPrice(sku)['sell']
     
     #Convert price to json object that the socket can emit.
     x = Price(buy, sell, name, sku)
@@ -533,6 +531,6 @@ def pricestf(sku):
 
 if __name__ == '__main__':
     scheduler = APScheduler()
-    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=10)
     scheduler.start()
     socketio.run(app, debug=True)
