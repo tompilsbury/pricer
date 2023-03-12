@@ -230,12 +230,13 @@ def getPrice(sku):
                 else:
                     buy['metal'] = 0
 
-        #len(buyListings) < 1 
+        #len(buyListings) <= 1 
         else:
             if 'metal' in first['currencies']:
                 buy['metal'] = first['currencies']['metal']
             if 'keys' in first['currencies']:
                 buy['keys'] = first['currencies']['keys']
+            y = None
         return buy, x, y
             
     def getSell(first,x):
@@ -381,12 +382,13 @@ def getPrice(sku):
                 else:
                     sell['metal'] = 0
 
-        #len(sellListings) < 1
+        #len(sellListings) <= 1
         else:
             if 'metal' in first['currencies']:
                 sell['metal'] = first['currencies']['metal']
             if 'keys' in first['currencies']:
                 sell['keys'] = first['currencies']['keys']
+            y = None
         return sell, x, y
 
     #Call pricing functions with listings at the top of the stacks
@@ -467,11 +469,6 @@ def getPrice(sku):
     else:
         #If there are no bot sell listings, sell price will be obtained from prices.tf api
         sell = getPricesTFPrice(sku)['sell']
-
-    #Rounds the metal to 2.d.p (just in case of dodgy prices)
-    # buy['metal'] = round(buy['metal'],2)
-    # sell['metal'] = round(sell['metal'],2)
-
 
     #Buying for more than selling, get a cheaper buy price (sell price has priority)
     while buy['keys'] > sell['keys']:
