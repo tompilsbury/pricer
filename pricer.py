@@ -8,8 +8,8 @@ from flask_apscheduler import APScheduler
 import time
 import json
 from tf2utilities.main import TF2
-from urllib import parse, request
 import traceback
+import requests
 
 
 from pricestf import getPricesTFPrice
@@ -29,6 +29,13 @@ item = {
     "currency": None,
     "items": [],
     }
+
+#Config for bptf api requests
+url = 'https://backpack.tf/api/classifieds/listings/snapshot'
+params = {
+    "token": config.bptfApiKey,
+    "appid": 440
+}
 
 class Price():
     def __init__(self, buy, sell, name, sku):
@@ -69,10 +76,10 @@ def getPrice(sku):
 
         return price
 
-    #Get item listing data from bptf api
-    url = f'https://backpack.tf/api/classifieds/listings/snapshot?token={config.bptfApiKey}&sku={parse.quote(name)}&appid=440'
-    data = json.load(request.urlopen(url))
-    listings = data['listings']
+    #Make GET request to bptf listings snapshot api
+    params['sku'] = name
+    response = requests.get(url, params=params)
+    listings = response.json()['listings']
 
     #Initialise Listings stacks
     sellListings = []
