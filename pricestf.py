@@ -1,5 +1,5 @@
-import requests
-import math
+from requests import get, post
+from math import floor
 
 
 
@@ -10,7 +10,7 @@ def getApiToken() -> str:
         "accept": "application/json"
     }
 
-    response = requests.post(endpoint, headers=headers)
+    response = post(endpoint, headers=headers)
     if response.status_code == 200:
         return response.json()['accessToken']
     else:
@@ -25,14 +25,14 @@ def getPricesTFPrice(sku):
     }
     endpoint = f'https://api2.prices.tf/prices/{sku}'
 
-    response = requests.get(endpoint, headers=headers)
+    response = get(endpoint, headers=headers)
     if response.status_code == 200:
         jsonRes = response.json()
 
         buyKeys = jsonRes['buyKeys']
         sellKeys = jsonRes['sellKeys']
-        buyMetal = math.floor(jsonRes['buyHalfScrap'] * (1/18)*100)/100 
-        sellMetal = math.floor(jsonRes['sellHalfScrap'] * (1/18)*100)/100
+        buyMetal = floor(jsonRes['buyHalfScrap'] * (1/18)*100)/100 
+        sellMetal = floor(jsonRes['sellHalfScrap'] * (1/18)*100)/100
 
         price = {'buy': {'keys': buyKeys, 'metal': buyMetal}, 'sell': {'keys': sellKeys, 'metal': sellMetal}}
         return price
