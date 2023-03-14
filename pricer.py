@@ -1,6 +1,5 @@
-import eventlet
-from eventlet import hubs
-eventlet.monkey_patch()
+from eventlet import hubs, monkey_patch
+monkey_patch()
 hubs.use_hub('poll')
 from flask import Flask
 from flask_socketio import SocketIO
@@ -9,8 +8,7 @@ import time
 import json
 from tf2utilities.main import TF2
 import traceback
-import requests
-
+from requests import get
 
 from pricestf import getPricesTFPrice
 
@@ -78,30 +76,13 @@ def getPrice(sku):
 
     #Make GET request to bptf listings snapshot api
     params['sku'] = name
-    response = requests.get(url, params=params)
+    response = get(url, params=params)
     listings = response.json()['listings']
 
-    #Initialise Listings stacks
-    sellListings = []
-    buyListings = []
-
-    #Append only bot listings to the stacks
+    #Initialise stacks of buy and sell listings
     #Do not append own bots listings or listings for USD
-    for i in listings:
-        if i['intent'] == 'sell' and 'userAgent' in i:
-            if i['steamid'] == config.botSteamID:
-                continue
-            elif 'usd' in i['currencies']:
-                continue
-            else:
-                sellListings.append(i)
-        elif 'userAgent' in i:
-            if i['steamid'] == config.botSteamID:
-                continue
-            elif 'usd' in i['currencies']:
-                continue
-            else:
-                buyListings.append(i)
+    sellListings = [i for i in listings if i['intent'] == 'sell' and 'userAgent' in i and i['steamid'] != config.botSteamID and 'usd' not in i['currencies']]
+    buyListings = [i for i in listings if i['intent'] == 'buy' and 'userAgent' in i and i['steamid'] != config.botSteamID and 'usd' not in i['currencies']]
     
     #Reverse so best prices are at the tops of the stacks.
     sellListings.reverse()
@@ -488,7 +469,6 @@ def getPrice(sku):
     #Convert price to json object that the socket can emit.
     x = Price(buy, sell, name, sku)
     price = (x).get_json()
-
     return price
 
 def background_task(url):
@@ -537,6 +517,6 @@ def pricestf(sku):
 
 if __name__ == '__main__':
     scheduler = APScheduler()
-    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=30)
+    scheduler.add_job(func=background_task, args=['redis://localhost:6379'], trigger='interval', id='job', minutes=1)
     scheduler.start()
     socketio.run(app, debug=True)
