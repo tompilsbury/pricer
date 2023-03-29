@@ -73,6 +73,8 @@ def getPrice(sku):
         price = (x).get_json()
 
         return price
+    
+    attributes = sku.split(';')
 
     #Make GET request to bptf listings snapshot api
     params['sku'] = name
@@ -378,46 +380,80 @@ def getPrice(sku):
             y = None
         return sell, x, y
 
-    #Call pricing functions with listings at the top of the stacks
-    if len(buyListings) >= 3:
-        #3 bot buy listings or more, call getBuy function.
-        firstBuy = buyListings.pop()
-        buy, xBuy ,yBuy = getBuy(firstBuy, buyListings.pop())
-        #The function returns the x and y listings so they can be reused later if the buy price > sell price.
-    elif len(buyListings) == 2:
-        buy = {
-            'keys': 0,
-            'metal': 0    
-        }
-        x = buyListings.pop()
-        y = buyListings.pop()
+    #Handle buy price for unusual items
+    if attributes[1] == '5':
+        #Unusuals require more aggressive pricing than other items.
+        #Unusual buy price is calculated using the best two buy listings.
 
-        #Only two listings, match the best one.
-        if 'keys' in x['currencies'] and 'keys' in y['currencies']:
-            buy['keys'] = x['currencies']['keys']
+        firstBuy = buyListings.pop()
+        secondBuy = buyListings.pop()
+        buy = {
+        'keys': 0,
+        'metal': 0    
+        }
+        if 'keys' in firstBuy['currencies'] and 'keys' in secondBuy['currencies']:
+            if firstBuy['currencies']['keys'] == secondBuy['currencies']['keys']:
+                buy['keys'] = firstBuy['currencies']['keys']
+                if 'metal' in firstBuy['currencies'] and 'metal' in secondBuy['currencies']:
+                    #Safety net for buy listing
+                    if firstBuy['currencies']['metal'] > secondBuy['currencies']['metal'] * 1.3:
+                        buy['metal'] = secondBuy['currencies']['metal']
+                    else:
+                        buy['metal'] = firstBuy['currencies']['metal']
+                elif 'metal' in firstBuy['currencies']:
+                    if firstBuy['currencies']['metal'] >= 30:
+                        buy['metal'] = secondBuy['currencies']['metal']
+                    else:
+                        buy['metal'] = firstBuy['currencies']['metal']
+            else:
+                buy['keys'] = secondBuy['currencies']['keys']
+                if 'metal' in secondBuy['currencies']:
+                    buy['metal'] = secondBuy['currencies']['metal']
         else:
             buy['keys'] = 0
-            
-        if 'metal' in x['currencies']: 
-            buy['metal'] = x['currencies']['metal']
-        else:
-            #Neither listing is selling for metal => buy['metal'] = 0
-            buy['metal'] = 0
-    elif len(buyListings) == 1:
-        buy = {
-            'keys': 0,
-            'metal': 0    
-        }
-        x = buyListings.pop()
+            buy['metal'] = firstBuy['currencies']['metal']
 
-        #Only one listing, match it.
-        if 'keys' in x['currencies']:
-            buy['keys'] = x['currencies']['keys']
-        if 'metal' in x['currencies']:
-            buy['metal'] = x['currencies']['metal']
     else:
-        #If there are no bot buy listings, buy price will be obtained from prices.tf api
-        buy = getPricesTFPrice(sku)['buy']
+        #Call pricing functions with listings at the top of the stacks
+        if len(buyListings) >= 3:
+            #3 bot buy listings or more, call getBuy function.
+            firstBuy = buyListings.pop()
+            buy, xBuy ,yBuy = getBuy(firstBuy, buyListings.pop())
+            #The function returns the x and y listings so they can be reused later if the buy price > sell price.
+        elif len(buyListings) == 2:
+            buy = {
+                'keys': 0,
+                'metal': 0    
+            }
+            x = buyListings.pop()
+            y = buyListings.pop()
+
+            #Only two listings, match the best one.
+            if 'keys' in x['currencies'] and 'keys' in y['currencies']:
+                buy['keys'] = x['currencies']['keys']
+            else:
+                buy['keys'] = 0
+                
+            if 'metal' in x['currencies']: 
+                buy['metal'] = x['currencies']['metal']
+            else:
+                #Neither listing is selling for metal => buy['metal'] = 0
+                buy['metal'] = 0
+        elif len(buyListings) == 1:
+            buy = {
+                'keys': 0,
+                'metal': 0    
+            }
+            x = buyListings.pop()
+
+            #Only one listing, match it.
+            if 'keys' in x['currencies']:
+                buy['keys'] = x['currencies']['keys']
+            if 'metal' in x['currencies']:
+                buy['metal'] = x['currencies']['metal']
+        else:
+            #If there are no bot buy listings, buy price will be obtained from prices.tf api
+            buy = getPricesTFPrice(sku)['buy']
 
     if len(sellListings) >= 3:
         #3 bot sell listings or more, call getSell function
