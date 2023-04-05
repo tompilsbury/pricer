@@ -9,6 +9,9 @@ import json
 from tf2utilities.main import TF2
 import traceback
 from requests import get
+from sys import setrecursionlimit
+
+setrecursionlimit(1500)
 
 from pricestf import getPricesTFPrice
 
