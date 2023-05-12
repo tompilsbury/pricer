@@ -68,14 +68,16 @@ class Price():
 def getPrice(sku):
     #Convert to name from sku
     name = tf2.getNameFromSku(sku)
-    if sku == '5021;6':
-        keyPrice = getPricesTFPrice(sku)
-        buy = keyPrice['buy']
-        sell = keyPrice['sell']
-        x = Price(buy, sell, name, sku)
-        price = (x).get_json()
 
-        return price
+    # #Pricestf pricing for keys
+    # if sku == '5021;6':
+    #     keyPrice = getPricesTFPrice(sku)
+    #     buy = keyPrice['buy']
+    #     sell = keyPrice['sell']
+    #     x = Price(buy, sell, name, sku)
+    #     price = (x).get_json()
+
+    #     return price
     
     attributes = sku.split(';')
 
