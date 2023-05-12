@@ -223,7 +223,7 @@ def getPrice(sku):
                     buy['metal'] = 0
 
         #len(buyListings) <= 1 
-        else:
+        else: 
             if 'metal' in first['currencies']:
                 buy['metal'] = first['currencies']['metal']
             if 'keys' in first['currencies']:
@@ -502,7 +502,13 @@ def getPrice(sku):
         buy,xBuy,yBuy = getBuy(xBuy, yBuy)
     if buy['keys'] == sell['keys']:
         while buy['metal'] >= sell['metal']:
-            buy, xBuy ,yBuy = getBuy(xBuy, yBuy)
+            if len(buyListings) == 1:
+                # This is called when it cannot find a buy price for less than sell :/
+                pricestf = getPricesTFPrice(sku)
+                buy['metal'] = pricestf['buy']['metal']
+                sell['metal'] = pricestf['sell']['metal']
+            else:
+                buy, xBuy ,yBuy = getBuy(xBuy, yBuy)
             
     
     #Convert price to json object that the socket can emit.
