@@ -86,8 +86,8 @@ def getPrice(sku):
 
     #Initialise stacks of buy and sell listings
     #Do not append own bots listings or listings for USD
-    sellListings = [i for i in listings if i['intent'] == 'sell' and 'userAgent' in i and i['steamid'] != config.botSteamID and 'usd' not in i['currencies']]
-    buyListings = [i for i in listings if i['intent'] == 'buy' and 'userAgent' in i and i['steamid'] != config.botSteamID and 'usd' not in i['currencies']]
+    sellListings = [i for i in listings if i['intent'] == 'sell' and 'userAgent' in i and i['steamid'] not in config.botSteamID and 'usd' not in i['currencies']]
+    buyListings = [i for i in listings if i['intent'] == 'buy' and 'userAgent' in i and i['steamid'] not in config.botSteamID and 'usd' not in i['currencies']]
     
     #Reverse so best prices are at the tops of the stacks.
     sellListings.reverse()
