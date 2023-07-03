@@ -14,56 +14,26 @@ from sys import setrecursionlimit
 setrecursionlimit(1500)
 
 from pricestf import getPricesTFPrice
+from dataStorage import dataStoring
+from Price import Price
 
 #import config file
 import config
 
 tf2 = TF2(config.steamApiKey).schema
 
+db = dataStoring("prices.db")
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True, message_queue='redis://' + config.redisURL)
-
-
-item = {
-    "success": True,
-    "currency": None,
-    "items": [],
-    }
 
 #Config for bptf api requests
 url = 'https://backpack.tf/api/classifieds/listings/snapshot'
 params = {
     "token": config.bptfApiKey,
     "appid": 440
-}
-
-class Price():
-    def __init__(self, buy, sell, name, sku):
-        self.buy = buy
-        self.sell = sell
-        self.name = name
-        self.sku = sku
-    def get_json(self):
-        price = {
-            "buy": self.buy,
-            "sell": self.sell,
-            "currency": None,
-            "name": self.name,
-            "sku": self.sku,
-            "source": 'bptf',
-            "time": int((time.time()) * 1000)
-        }
-        return price
-    def get_dbObject(self):
-        obj = {
-            self.sku: {
-                "buy": self.buy,
-                "sell": self.sell,
-                "name": self.name,
-            }
-        }
-        return obj
+}   
         
 def getPrice(sku):
     #Convert to name from sku
@@ -513,6 +483,7 @@ def getPrice(sku):
     
     #Convert price to json object that the socket can emit.
     x = Price(buy, sell, name, sku)
+    db.storeData(x)
     price = (x).get_json()
     return price
 
@@ -544,7 +515,7 @@ def handle_message(data):
 
 @app.route('/items/', methods=['GET'])
 def items():
-    return json.dumps(item)
+    return
 
 @app.route('/items/<string:sku>', methods=['GET', 'POST'])
 def itemprices(sku):
