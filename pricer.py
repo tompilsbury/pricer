@@ -4,7 +4,6 @@ hubs.use_hub('poll')
 from flask import Flask
 from flask_socketio import SocketIO
 from flask_apscheduler import APScheduler
-import time
 import json
 from tf2utilities.main import TF2
 import traceback
