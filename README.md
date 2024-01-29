@@ -1,17 +1,19 @@
 # Custom pricer for tf2autobot
 ***USE AT OWN RISK OF ITEMS***
+This pricer has not been updated in a long time. I am not responsible for any loss of items that may occur from using it.
 
-This is a pricer written in Python that uses Flask, Flask-socketio and Redis.
+This is a pricer written in Python that uses Flask and Flask-socketio.
+
+## How it works
+The pricer loops through your pricelist.json file in your TF2Autobot directory every 30 minutes. For each item, it looks at the three best buy and sell listings from bots, and tries to match the best one based on the differences in price. This is to try and keep prices highly competitive, while minimising risk.
 
 ## Requirements/Setup
-1. Install Redis on local machine
-2. Navigate to pricer folder and install requirements by running `pip install -r requirements.txt`
-3. Fill out config_template.py and save it as config.py
-4. Enter url of pricer in ecosystems.json file of autobot
+1. Navigate to pricer folder and install requirements by running `pip install -r requirements.txt`
+2. Fill out config_template.py and save it as config.py
+3. Enter url of pricer in ecosystems.json file of your TF2Autobot
 
 
 ## How To Start 
-1. Start Redis server by entering `redis-server` in terminal
-2. Start up pricer.py by running `python3 pricer.py`
+Start up pricer.py by running `python pricer.py`
 
 
