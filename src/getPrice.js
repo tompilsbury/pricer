@@ -445,6 +445,17 @@ async function getPrice(sku) {
     const [buyListings, sellListings] = await apiCall(name);
     const isUnusual = (sku.split(";"))[1] === "5";
 
+    // Use prices.tf for key prices -> can be volatile so best to be safe
+    if (sku === "5021;6") {
+        const price = await getPricesTFPrice(sku)
+        dataFormat.buy = price.buy;
+        dataFormat.sell = price.sell;
+        dataFormat.name = name;
+        dataFormat.sku = sku;
+        dataFormat.time = Math.floor(Date.now() / 1000);
+        return dataFormat
+    }
+
     buyListings.reverse();
     sellListings.reverse();
     
