@@ -302,7 +302,7 @@ async function getSell(first, second, sellListings) {
                             // Could match first['currencies']['metal'], but match x for safety
                             sell.metal = second.currencies.metal;
                         }
-                    } else if ('metal' in first.currencies && 'metal' in third.currencies) {
+                    } else if ('metal' in second.currencies && 'metal' in third.currencies) {
                         if (await minusOneScrap(third.currencies.metal, second.currencies.metal) > 0.11) {
                             return resolve(await getSell(second, third, sellListings));
                         } else {
@@ -458,6 +458,7 @@ async function getPrice(sku) {
 
     buyListings.reverse();
     sellListings.reverse();
+
     
     let buy = { keys: 0, metal: 0 };
     let sell = { keys: 0, metal: 0 }
