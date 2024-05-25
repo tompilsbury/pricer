@@ -58,11 +58,4 @@ async function getPricesTFPrice(sku) {
     }
 }
 
-// getApiToken()
-// console.log(getApiToken());
-// getPricesTFPrice('205;11;kt-2').then(price => {
-//     console.log(price);
-// });
-
-// getPricesTFPrice('205;11;kt-2')
 module.exports = { getPricesTFPrice };
