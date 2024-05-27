@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const { getPrice } = require('./getPrice');
 const schedule = require('node-schedule');
 const fs = require('fs/promises');
+const { Worker } = require('worker_threads');
 
 
 const config = require('../config/config.json');
@@ -58,38 +59,50 @@ io.on('connection', (socket) => {
 })
 
 
-async function backgroundTask() {
+
+function processItemInWorker(sku) {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker('./src/getPriceWorker.js', { workerData: sku });
+      worker.on('message', resolve);
+      worker.on('error', reject);
+      worker.on('exit', (code) => {
+        if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
+      });
+    });
+  }
+  
+  async function backgroundTask() {
     try {
-        const data = await fs.readFile(`${config.pathToPricelist}/pricelist.json`, 'utf8');
-        const items = JSON.parse(data);
-        const queue = Object.keys(items); // Create a queue of item keys (SKUs)
-
-        // Function to process queue with delay
-        const processQueue = async () => {
-            while (queue.length > 0) {
-                const sku = queue.shift(); // Dequeue an item from the queue
-                try {
-                    console.log(`GETTING PRICE FOR ${sku}`);
-                    const price = await getPrice(sku);
-                    io.emit('price', price);
-                    if (price && price.buy && price.sell) {
-                        console.log(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
-                    } else {
-                        console.error('Error: Price object or its properties are undefined.');
-                    }
-                } catch (error) {
-                    console.error(error);
-                }
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 second before processing next item
+      const data = await fs.readFile(`${config.pathToPricelist}/pricelist.json`, 'utf8');
+      const items = JSON.parse(data);
+      const queue = Object.keys(items);
+  
+      const processQueue = async () => {
+        while (queue.length > 0) {
+          const sku = queue.shift();
+          try {
+            console.log(`GETTING PRICE FOR ${sku}`);
+            const price = await processItemInWorker(sku);
+            io.emit('price', price);
+            if (price && price.buy && price.sell) {
+              console.log(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
+            } else {
+              console.error('Error: Price object or its properties are undefined.');
             }
-        };
-
-        await processQueue(); // Start processing the queue
+          } catch (error) {
+            console.error(error);
+          }
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      };
+  
+      await processQueue();
     } catch (error) {
-        console.error('Error reading pricelist file');
-        console.error(error);
+      console.error('Error reading pricelist file');
+      console.error(error);
     }
-}
+  }
+  
 
 
 backgroundTask();
