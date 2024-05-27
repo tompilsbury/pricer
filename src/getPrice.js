@@ -401,41 +401,54 @@ async function getSell(first, second, sellListings) {
     });
 }
 
-async function getUnusualBuy(buyListings) {
+async function getUnusualBuy(buyListings, sku) {
     return new Promise(async (resolve, reject) => {
         let buy = { keys: 0, metal: 0 };
 
         const firstBuy = buyListings.pop();
         const secondBuy = buyListings.pop();
 
-        if ('keys' in firstBuy.currencies && 'keys' in secondBuy.currencies) {
-            if (firstBuy.currencies.keys === secondBuy.currencies.keys) {
-                buy.keys = firstBuy.currencies.keys;
-                if ('metal' in firstBuy.currencies && 'metal' in secondBuy.currencies) {
-                    // Safety net for buy listing
-                    if (firstBuy.currencies.metal > secondBuy.currencies.metal * 1.3) {
-                        buy.metal = secondBuy.currencies.metal;
-                    } else {
-                        buy.metal = firstBuy.currencies.metal;
+        if (firstBuy) {
+
+        
+            if ('keys' in firstBuy.currencies && 'keys' in secondBuy.currencies) {
+                if (firstBuy.currencies.keys === secondBuy.currencies.keys) {
+                    buy.keys = firstBuy.currencies.keys;
+                    if ('metal' in firstBuy.currencies && 'metal' in secondBuy.currencies) {
+                        // Safety net for buy listing
+                        if (firstBuy.currencies.metal > secondBuy.currencies.metal * 1.3) {
+                            buy.metal = secondBuy.currencies.metal;
+                        } else {
+                            buy.metal = firstBuy.currencies.metal;
+                        }
+                    } else if ('metal' in firstBuy.currencies) {
+                        if (firstBuy.currencies.metal >= 30) {
+                            buy.metal = secondBuy.currencies.metal;
+                        } else {
+                            buy.metal = firstBuy.currencies.metal;
+                        }
                     }
-                } else if ('metal' in firstBuy.currencies) {
-                    if (firstBuy.currencies.metal >= 30) {
+                } else {
+                    buy.keys = secondBuy.currencies.keys;
+                    if ('metal' in secondBuy.currencies) {
                         buy.metal = secondBuy.currencies.metal;
-                    } else {
-                        buy.metal = firstBuy.currencies.metal;
                     }
                 }
             } else {
-                buy.keys = secondBuy.currencies.keys;
-                if ('metal' in secondBuy.currencies) {
-                    buy.metal = secondBuy.currencies.metal;
-                }
+                buy.keys = 0;
+                buy.metal = firstBuy.currencies.metal;
             }
+            resolve(buy)
         } else {
-            buy.keys = 0;
-            buy.metal = firstBuy.currencies.metal;
+            console.log(`Could not find any buy listings for ${sku}, getting prices.tf price`)
+            buyPrice = await getPricesTFPrice(sku)
+            if (buyPrice) {
+                resolve(buyPrice.buy)
+            } else {
+                console.log(`No buy price found for ${sku}, returning 0 keys 0 ref`)
+                resolve(buy);
+            }
         }
-        resolve(buy)
     })
 }
 
@@ -465,7 +478,7 @@ async function getPrice(sku) {
     let xBuy, yBuy, xSell, ySell;
 
     if (isUnusual) {
-        buy = await getUnusualBuy(buyListings);
+        buy = await getUnusualBuy(buyListings, sku);
     } else {
         if (buyListings.length >= 3) {
             const firstBuy = buyListings.pop();
