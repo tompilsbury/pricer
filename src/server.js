@@ -11,21 +11,37 @@ const app = express();
 
 const server = http.createServer(app)
 
-const io = socketIo(server);
+const io = socketIo(server, {
+    pingInterval: 10000, // How often the server sends a ping packet to the client (in milliseconds)
+    pingTimeout: 60000, // How long the server waits for a pong packet from the client (in milliseconds)
+  });
 
 app.get('/items', (req, res) => {
     res.send({ message: 'Hello from the API' });
 });
 
-app.get('/items/:sku', async (req, res) => {
+app.route('/items/:sku')
+.get(async (req, res) => {
     const sku = req.params.sku;
-    console.log(sku);
+    console.log('GET request for SKU:', sku);
     try {
-        const price = await getPrice(sku);
-        res.send(price);
+      const price = await getPrice(sku);
+      res.send(price);
     } catch (error) {
-        console.error('Error getting price:', error);
-        res.status(500).send('Internal Server Error');
+      console.error('Error getting price:', error);
+      res.status(500).send('Internal Server Error');
+    }
+})
+.post(async (req, res) => {
+    const sku = req.params.sku;
+    console.log('POST request for SKU:', sku);
+    console.log('Request body:', req.body); // You can process the body data if needed
+    try {
+      const price = await getPrice(sku);
+      res.send(price);
+    } catch (error) {
+      console.error('Error getting price:', error);
+      res.status(500).send('Internal Server Error');
     }
 });
 
@@ -40,36 +56,6 @@ io.on('connection', (socket) => {
         console.log('A client disconnected');
     })
 })
-
-
-// Background task
-// async function backgroundTask() {
-//     try {
-//         const data = await fs.readFile(`${config.pathToPricelist}/pricelist.json`, 'utf8');
-//         const items = JSON.parse(data);
-//         for (sku in items) {
-//             try {
-//                 console.log(`GETTING PRICE FOR ${sku}`)
-//                 // const price = await getPrice("205;11;kt-2"); // Strange Spec KS Rocket Launcher
-//                 //const price = await getPrice(sku)
-//                 const price = await getPrice(sku)
-//                 io.emit('price', price);
-//                 if (price && price.buy && price.sell) {
-//                     console.log(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
-//             } else {
-//                 console.error('Error: Price object or its properties are undefined.');
-//             }          
-//             await new Promise(resolve => setTimeout(resolve, 3000)); // sleep for 3 seconds
-//             } catch (error) {
-//             //console.error(`ERROR GETTING PRICE FOR ${item}`);
-//             console.error(error);
-//             }
-//         }
-//     } catch (error) {
-//       console.error('Error reading pricelist file');
-//       console.error(error);
-//     }
-// }
 
 
 async function backgroundTask() {
