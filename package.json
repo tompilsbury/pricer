@@ -15,6 +15,7 @@
     "fs": "^0.0.1-security",
     "node-schedule": "^2.1.1",
     "socket.io": "^4.7.5",
-    "tf2-item-format": "^5.9.12"
+    "tf2-item-format": "^5.9.12",
+    "worker-threads": "^1.0.0"
   }
 }
