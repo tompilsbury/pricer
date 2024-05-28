@@ -65,12 +65,36 @@ async function calculateBuyPrice(first, second, buyListings) {
 
                 const metals = [first.currencies.metal, second.currencies.metal, third.currencies.metal].filter(metal => metal !== undefined);
 
+                // if (metals.every(metal => metal === metals[0])) {
+                //     buy.metal = metals[0];
+                // } else {
+                //     if ((metals[0] - metals[1]) > 0.11) {
+                //         return await calculateBuyPrice(second, third, buyListings);
+                //     } else {
+                //         buy.metal = metals[1];
+                //     }
+                // }
                 if (metals.every(metal => metal === metals[0])) {
                     buy.metal = metals[0];
-                } else {
-                    if ((metals[0] - metals[1]) > 0.11) {
+                } else if (metals[1] === metals[2]) {
+                    if ((metals[1] - metals[0]) < 0.11) {
                         return await calculateBuyPrice(second, third, buyListings);
+                    } else if ((metals[0] - metals[1]) <= 0.11) {
+                        buy.metal = metals[0];
+                    }
+                }
+                else if (metals[0] === metals[1]) {
+                    if ((metals[1] - metals[2]) > 0.11) {
+                        buy.metal = metals[2];
                     } else {
+                        buy.metal = metals[1];
+                    }
+                }
+                else {
+                    if ((metals[1] - metals[0]) > 0.11 || (metals[1] - metals[2]) > 0.11) {
+                        return await calculateBuyPrice(second, third, buyListings);
+                    }
+                    else {
                         buy.metal = metals[1];
                     }
                 }
@@ -90,10 +114,25 @@ async function calculateBuyPrice(first, second, buyListings) {
             const metals = [first?.currencies?.metal, second?.currencies?.metal, third?.currencies?.metal].filter(metal => metal !== undefined);
             if (metals.every(metal => metal === metals[0])) {
                 buy.metal = metals[0];
-            } else {
-                if ((metals[0] - metals[1]) > 0.11) {
+            } else if (metals[1] === metals[2]) {
+                if ((metals[1] - metals[0]) < 0.11) {
                     return await calculateBuyPrice(second, third, buyListings);
+                } else if ((metals[0] - metals[1]) <= 0.11) {
+                    buy.metal = metals[0];
+                }
+            }
+            else if (metals[0] === metals[1]) {
+                if ((metals[1] - metals[2]) > 0.11) {
+                    buy.metal = metals[2];
                 } else {
+                    buy.metal = metals[1];
+                }
+            }
+            else {
+                if ((metals[1] - metals[0]) > 0.11 || (metals[1] - metals[2]) > 0.11) {
+                    return await calculateBuyPrice(second, third, buyListings);
+                }
+                else {
                     buy.metal = metals[1];
                 }
             }
@@ -315,6 +354,7 @@ async function getPrice(sku) {
     dataFormat.name = name;
     dataFormat.sku = sku;
     dataFormat.time = Math.floor(Date.now() / 1000);
+    console.log(name)
     return dataFormat;
 }
 
