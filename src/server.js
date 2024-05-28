@@ -71,6 +71,12 @@ function processItemInWorker(sku) {
     });
   }
   
+//   const pLimit = require('p-limit');
+
+async function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
   async function backgroundTask() {
     try {
       const data = await fs.readFile(`${config.pathToPricelist}/pricelist.json`, 'utf8');
@@ -82,7 +88,7 @@ function processItemInWorker(sku) {
           const sku = queue.shift();
           try {
             console.log(`GETTING PRICE FOR ${sku}`);
-            const price = await processItemInWorker(sku);
+            const price = await getPrice(sku);
             io.emit('price', price);
             if (price && price.buy && price.sell) {
               console.log(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
@@ -102,6 +108,8 @@ function processItemInWorker(sku) {
       console.error(error);
     }
   }
+  
+  
   
 
 
