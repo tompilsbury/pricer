@@ -23,7 +23,7 @@ async function apiCall(name) {
             if (!attributes) return false;
             const attributesStr = JSON.stringify(attributes);
             return attributesStr.includes('2014') || attributesStr.includes('2013') ||
-                   attributes.some(attr => strangeParts.hasOwnProperty(attr.float_value) || spells.hasOwnProperty(attr.defindex));
+                   attributes.some(attr => strangeParts.hasOwnProperty(attr.float_value) || spells.hasOwnProperty(attr.defindex) || attr.defindex === '142');
         };
         const buyListings = listings.filter(i => 
             i.intent === 'buy' && 
@@ -41,7 +41,6 @@ async function apiCall(name) {
                 !i.item.attributes.some(attr => spells.hasOwnProperty(attr.defindex))
             )
         );
-        // console.log(buyListings)
         return [buyListings, sellListings];
     } catch (error) {
         console.error("Error in apiCall:", error);
@@ -335,6 +334,12 @@ async function getPrice(sku) {
 
     buyListings.reverse();
     sellListings.reverse();
+    // console.log(sellListings[sellListings.length - 1])
+    for (i in buyListings) {
+        if (buyListings[i].steamid === "76561198110912705") {
+            console.log(buyListings[i].item.attributes)
+        }
+    }
 
     let buy = { keys: 0, metal: 0 };
     let sell = { keys: 0, metal: 0 };

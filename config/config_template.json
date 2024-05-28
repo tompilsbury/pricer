@@ -1,6 +1,5 @@
 {
     "pathToPricelist": "/PATH/TO/BOTS/PRICELIST",
-    "steamApiKey": "",
     "bptfApiKey": "",
     "botSteamID": ["STEAM_ID64"]
 }
