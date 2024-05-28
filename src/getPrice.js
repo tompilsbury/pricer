@@ -43,8 +43,13 @@ async function apiCall(name) {
         );
         return [buyListings, sellListings];
     } catch (error) {
-        console.error("Error in apiCall:", error);
-        throw error;
+        console.error("Error in apiCall:", error.message);
+        if (error.message === "No listings found in API response." && !name.startsWith("The ")) {
+            console.log("Retrying with 'the' prefix...");
+            return await apiCall("The " + name);
+        } else {
+            throw error;
+        }
     }
 }
 
