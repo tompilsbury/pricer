@@ -25,7 +25,6 @@ async function apiCall(name) {
             return attributesStr.includes('2014') || attributesStr.includes('2013') ||
                    attributes.some(attr => strangeParts.hasOwnProperty(attr.float_value) || spells.hasOwnProperty(attr.defindex));
         };
-
         const buyListings = listings.filter(i => 
             i.intent === 'buy' && 
             i.userAgent && 
@@ -42,6 +41,7 @@ async function apiCall(name) {
                 !i.item.attributes.some(attr => spells.hasOwnProperty(attr.defindex))
             )
         );
+        // console.log(buyListings)
         return [buyListings, sellListings];
     } catch (error) {
         console.error("Error in apiCall:", error);
@@ -109,7 +109,6 @@ async function calculateBuyPrice(first, second, buyListings) {
         buy.keys = 0;
         buy.metal = 0;
     }
-
     return { buy, second, third };
 }
 

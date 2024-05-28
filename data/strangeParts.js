@@ -1,7 +1,7 @@
 module.exports = {
     // 0: "Kills"
     // 1: "Ubers"
-    2: "Kill Assists",
+    //2: "Kill Assists",
     // 3: "Sentry Kills",
     // 4: "Sodden Victims",
     // 5: "Spies Shocked",
