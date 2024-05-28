@@ -252,6 +252,53 @@ async function calculateSellPrice(first, second, sellListings) {
     return { sell, second, third };
 }
 
+async function getUnusualBuy(buyListings, sku) {
+    let buy = { keys: 0, metal: 0 };
+
+    const firstBuy = buyListings.pop();
+    const secondBuy = buyListings.pop();
+
+    if (firstBuy) {
+        if ('keys' in firstBuy.currencies && 'keys' in secondBuy.currencies) {
+            if (firstBuy.currencies.keys === secondBuy.currencies.keys) {
+                buy.keys = firstBuy.currencies.keys;
+                if ('metal' in firstBuy.currencies && 'metal' in secondBuy.currencies) {
+                    // Safety net for buy listing
+                    if (firstBuy.currencies.metal > secondBuy.currencies.metal * 1.3) {
+                        buy.metal = secondBuy.currencies.metal;
+                    } else {
+                        buy.metal = firstBuy.currencies.metal;
+                    }
+                } else if ('metal' in firstBuy.currencies) {
+                    if (firstBuy.currencies.metal >= 30) {
+                        buy.metal = secondBuy.currencies.metal;
+                    } else {
+                        buy.metal = firstBuy.currencies.metal;
+                    }
+                }
+            } else {
+                buy.keys = secondBuy.currencies.keys;
+                if ('metal' in secondBuy.currencies) {
+                    buy.metal = secondBuy.currencies.metal;
+                }
+            }
+        } else {
+            buy.keys = 0;
+            buy.metal = firstBuy.currencies.metal;
+        }
+        return buy;
+    } else {
+        console.log(`Could not find any buy listings for ${sku}, getting prices.tf price`);
+        const buyPrice = await getPricesTFPrice(sku);
+        if (buyPrice) {
+            return buyPrice.buy;
+        } else {
+            console.log(`No buy price found for ${sku}, returning 0 keys 0 ref`);
+            return buy;
+        }
+    }
+}
+
 
 async function getPrice(sku) {
     const attributes = parseSKU(sku);
