@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 
-const MAX_SNAPSHOTS = 50; // Define the maximum number of snapshots per SKU
+const MAX_SNAPSHOTS = 30; // Define the maximum number of snapshots per SKU
 
 function manageSnapshots(db, sku, callback) {
   // Retrieve all snapshots for the SKU ordered by timestamp descending
