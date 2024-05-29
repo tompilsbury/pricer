@@ -2,10 +2,11 @@ const express = require('express');
 const http = require('http');
 const sqlite3 = require('sqlite3').verbose();
 const socketIo = require('socket.io');
-const { getPrice } = require('./getPrice');
 const schedule = require('node-schedule');
 const fs = require('fs/promises');
-const { Worker } = require('worker_threads');
+
+const { getPrice } = require('./getPrice');
+const { manageSnapshots } = require('./db/manageSnapshots');
 
 
 const config = require('../config/config.json');
@@ -49,7 +50,7 @@ app.route('/items/:sku')
 
 app.get('/price-history/:sku', (req, res) => {
   const sku = req.params.sku;
-  const db = new sqlite3.Database('./prices.db');
+  const db = new sqlite3.Database('./src/db/prices.db');
   db.all(`SELECT * FROM prices WHERE sku = ? ORDER BY timestamp`, [sku], (err, rows) => {
     if (err) {
       res.status(500).send('Error querying the database');
@@ -79,7 +80,7 @@ async function backgroundTask() {
     const items = JSON.parse(data);
     const queue = Object.keys(items);
 
-    const db = new sqlite3.Database('./prices.db');
+    const db = new sqlite3.Database('./src/db/prices.db');
 
     const processQueue = async () => {
       while (queue.length > 0) {
@@ -91,6 +92,7 @@ async function backgroundTask() {
           if (price && price.buy && price.sell) {
             console.log(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
 
+            // Insert the new price snapshot
             db.run(`INSERT INTO prices (sku, buy_keys, buy_metal, sell_keys, sell_metal) VALUES (?, ?, ?, ?, ?)`, 
               [sku, price.buy.keys, price.buy.metal, price.sell.keys, price.sell.metal], 
               (err) => {
@@ -98,6 +100,15 @@ async function backgroundTask() {
                   console.error('Error inserting data into the database', err);
                 } else {
                   console.log(`Inserted price for ${sku} in the database`);
+
+                  // Manage snapshots to ensure we do not exceed the maximum allowed
+                  manageSnapshots(db, sku, (manageErr) => {
+                    if (manageErr) {
+                      console.error('Error managing snapshots', manageErr);
+                    } else {
+                      console.log(`Managed snapshots for ${sku}`);
+                    }
+                  });
                 }
               }
             );
@@ -112,6 +123,7 @@ async function backgroundTask() {
     };
 
     await processQueue();
+    db.close();
   } catch (error) {
     console.error('Error reading pricelist file');
     console.error(error);
