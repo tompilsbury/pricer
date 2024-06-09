@@ -411,7 +411,6 @@ async function getPrice(sku) {
     dataFormat.name = name;
     dataFormat.sku = sku;
     dataFormat.time = Math.floor(Date.now() / 1000);
-    console.log(name)
     return dataFormat;
 }
 

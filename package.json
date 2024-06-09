@@ -18,6 +18,7 @@
     "socket.io": "^4.7.5",
     "sqlite3": "^5.1.7",
     "tf2-item-format": "^5.9.12",
+    "winston": "^3.13.0",
     "worker-threads": "^1.0.0"
   }
 }
