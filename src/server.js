@@ -73,6 +73,13 @@ io.on('connection', (socket) => {
     })
 })
 
+const arePricesEqual = async (price1, price2) => {
+  return (
+    price1.keys === price2.keys &&
+    price1.metal === price2.metal
+  );
+};
+
   
 async function backgroundTask() {
   try {
@@ -85,10 +92,10 @@ async function backgroundTask() {
     const processQueue = async () => {
       while (queue.length > 0) {
         const sku = queue.shift();
+        const originalPrice = {buy: items[sku]?.buy, sell: items[sku]?.sell}
         try {
           console.log(`GETTING PRICE FOR ${sku}`);
           const price = await getPrice(sku);
-          io.emit('price', price);
           if (price && price.buy && price.sell) {
             console.log(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
 
@@ -112,6 +119,14 @@ async function backgroundTask() {
                 }
               }
             );
+            
+            if (!await arePricesEqual(price.buy, originalPrice.buy) || !await arePricesEqual(price.sell, originalPrice.sell)) {
+              // New price differs from old price, emit the new price.
+              io.emit('price', price);
+            } else {
+              // New price is the same as the old price, don't emit.
+              console.log(`No change in price for ${sku}, skipping...`)
+            }
           } else {
             console.error('Error: Price object or its properties are undefined.');
           }
