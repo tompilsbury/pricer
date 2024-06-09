@@ -98,7 +98,6 @@ async function backgroundTask() {
           logger.debug(`GETTING PRICE FOR ${sku}`);
           const price = await getPrice(sku);
           if (price && price.buy && price.sell) {
-            logger.info(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
 
             // Insert the new price snapshot
             db.run(`INSERT INTO prices (sku, buy_keys, buy_metal, sell_keys, sell_metal) VALUES (?, ?, ?, ?, ?)`, 
@@ -124,9 +123,10 @@ async function backgroundTask() {
             if (!await arePricesEqual(price.buy, originalPrice.buy) || !await arePricesEqual(price.sell, originalPrice.sell)) {
               // New price differs from old price, emit the new price.
               io.emit('price', price);
+              logger.info(`Emitted {price: buy: {keys: ${price.buy.keys}, metal: ${price.buy.metal}}, sell: {keys: ${price.sell.keys}, metal: ${price.sell.metal}}} for item ${price.sku}`);
             } else {
               // New price is the same as the old price, don't emit.
-              logger.debug(`No change in price for ${sku}, skipping...`)
+              logger.info(`No change in price for ${sku}, skipping...`)
             }
           } else {
             logger.error('Error: Price object or its properties are undefined.');
