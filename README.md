@@ -8,7 +8,8 @@ The pricer loops through your pricelist.json file in your TF2Autobot directory e
 ## Requirements/Setup
 1. Navigate to pricer folder and install dependencies by running `npm install`.
 2. Navigate into the /config folder and fill out the config_template.json file. Save it as config.json.
-3. Enter url of pricer in ecosystems.json file of your TF2Autobot. By default, this will be the IPV4 address of the device that it is hosted on.
+3. Initialise the database by running `npm run db`
+4. Enter url of pricer in ecosystems.json file of your TF2Autobot. By default, this will be the IPV4 address of the device that it is hosted on.
 
 
 ## How To Start 
