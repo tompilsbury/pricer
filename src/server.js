@@ -56,7 +56,7 @@ app.get('/price-history/:sku', (req, res) => {
     if (err) {
       res.status(500).send('Error querying the database');
     } else {
-      res.json(rows);
+      res.json({ priceHistory: rows });
     }
     db.close();
   });
