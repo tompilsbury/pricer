@@ -1,5 +1,11 @@
 const axios = require('axios');
 
+/**
+* Fetches an access token from the prices.tf API.
+*
+* @returns {Promise<string>} - A Promise that resolves to the access token string on success, or rejects with an error.
+* @throws {Error} - Throws an error if there's a problem fetching the token.
+*/
 async function getApiToken() {
     const endpoint = 'https://api2.prices.tf/auth/access';
     const headers = {
@@ -19,8 +25,12 @@ async function getApiToken() {
     }
 }
 
-
-
+/**
+* Fetches buy and sell prices for a given item SKU from the prices.tf API.
+*
+* @param {string} sku - The item's SKU.
+* @returns {Promise<{ buy: { keys: number, metal: number }, sell: { keys: number, metal: number } } | null>} - A Promise that resolves to an object containing buy and sell prices with `keys` and `metal` properties, or `null` if there's an error.
+*/
 async function getPricesTFPrice(sku) {
     try {
         const token = await getApiToken();

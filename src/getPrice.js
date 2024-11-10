@@ -12,40 +12,48 @@ const params = {
     sku: null
 };
 
+const botSteamIDs = new Set(config.botSteamID);
+
+/**
+* Checks if the given attributes contain invalid values.
+*
+* @param {Object} attributes - The attributes object to check.
+* @returns {boolean} - `true` if the attributes are invalid, `false` otherwise.
+*/
+const hasInvalidAttributes = (attributes) => {
+    if (!attributes) return false;
+    const attributesStr = JSON.stringify(attributes);
+    return attributesStr.includes('2014') || attributesStr.includes('2013') ||
+           attributes.some(attr => strangeParts.hasOwnProperty(attr.float_value) || spells.hasOwnProperty(attr.defindex) || attr.defindex === '142');
+};
+
+/**
+* Fetches buy and sell listings for a given item name from the API.
+*
+* @param {string} name - The name of the item to fetch listings for.
+* @returns {Promise<[Listing[], Listing[]][]>} - A Promise that resolves to an array containing two arrays:
+*     - The first array contains filtered buy listings.
+*     - The second array contains filtered sell listings.
+*/
 async function apiCall(name) {
     params.sku = name;
     try {
         const response = await axios.get(url, { params });
         const listings = response.data['listings'];
         if (!listings) throw new Error("No listings found in API response.");
-        const botSteamIDs = new Set(config.botSteamID);
-        const hasInvalidAttributes = (attributes) => {
-            if (!attributes) return false;
-            const attributesStr = JSON.stringify(attributes);
-            return attributesStr.includes('2014') || attributesStr.includes('2013') ||
-                   attributes.some(attr => strangeParts.hasOwnProperty(attr.float_value) || spells.hasOwnProperty(attr.defindex) || attr.defindex === '142');
-        };
-        const buyListings = listings.filter(i => 
-            i.intent === 'buy' && 
-            i.userAgent && 
-            !botSteamIDs.has(i.steamid) &&
-            (!i.currencies || !i.currencies.usd) &&
-            !hasInvalidAttributes(i.item.attributes)
-        );
-        const sellListings = listings.filter(i => 
-            i.intent === 'sell' && 
-            i.userAgent && 
-            !botSteamIDs.has(i.steamid) &&
-            (!i.currencies || !i.currencies.usd) &&
-            (!i.item.attributes || 
-                !i.item.attributes.some(attr => spells.hasOwnProperty(attr.defindex))
-            )
-        );
-        return [buyListings, sellListings];
+
+        const filterListings = (intent, listings) =>
+            listings.filter(i => i.intent === intent && i.userAgent && !botSteamIDs.has(i.steamid) &&
+                (!i.currencies || !i.currencies.usd) &&
+                (intent === 'buy' ? !hasInvalidAttributes(i.item.attributes) : true)
+            );
+    
+        return [filterListings('buy', listings), filterListings('sell', listings)];
+
     } catch (error) {
         console.error("Error in apiCall:", error.message);
         if (error.message === "No listings found in API response." && !name.startsWith("The ")) {
-            console.log("Retrying with 'the' prefix...");
+            console.log("Retrying with 'The' prefix...");
             return await apiCall("The " + name);
         } else {
             throw error;
@@ -53,6 +61,17 @@ async function apiCall(name) {
     }
 }
 
+/**
+* Calculates the buy price based on the provided buy listings.
+*
+* @param {Object} first - The first buy listing.
+* @param {Object} second - The second buy listing.
+* @param {Listing[]} buyListings - An array of remaining buy listings.
+* @returns {Promise<{ buy: { keys: number, metal: number }, second: Object, third: Object }>} - A Promise that resolves to an object containing:
+*     - `buy`: An object with `keys` and `metal` properties representing the calculated buy price.
+*     - `second`: The second buy listing after processing.
+*     - `third`: The third buy listing after processing.
+*/
 async function calculateBuyPrice(first, second, buyListings) {
     const buy = { keys: 0, metal: 0 };
     let third = null;
@@ -69,15 +88,6 @@ async function calculateBuyPrice(first, second, buyListings) {
 
                 const metals = [first.currencies.metal, second.currencies.metal, third.currencies.metal].filter(metal => metal !== undefined);
 
-                // if (metals.every(metal => metal === metals[0])) {
-                //     buy.metal = metals[0];
-                // } else {
-                //     if ((metals[0] - metals[1]) > 0.11) {
-                //         return await calculateBuyPrice(second, third, buyListings);
-                //     } else {
-                //         buy.metal = metals[1];
-                //     }
-                // }
                 if (metals.every(metal => metal === metals[0])) {
                     buy.metal = metals[0];
                 } else if (metals[1] === metals[2]) {
@@ -155,8 +165,17 @@ async function calculateBuyPrice(first, second, buyListings) {
     return { buy, second, third };
 }
 
-
-
+/**
+* Calculates the sell price based on the provided sell listings.
+*
+* @param {Object} first - The first sell listing.
+* @param {Object} second - The second sell listing.
+* @param {Listing[]} sellListings - An array of remaining sell listings.
+* @returns {Promise<{ sell: { keys: number, metal: number }, second: Object, third: Object }>} - A Promise that resolves to an object containing:
+*     - `sell`: An object with `keys` and `metal` properties representing the calculated sell price.
+*     - `second`: The second sell listing after processing.
+*     - `third`: The third sell listing after processing.
+*/
 async function calculateSellPrice(first, second, sellListings) {
     const sell = { keys: 0, metal: 0 };
     let third = null;
@@ -256,6 +275,15 @@ async function calculateSellPrice(first, second, sellListings) {
     return { sell, second, third };
 }
 
+/** 
+* Calculates the buy price for an unusual item based on the provided buy listings.
+*
+* Unusual items have a separate buy calculation due to more aggressive pricing strategies.
+*
+* @param {Listing[]} buyListings - An array of buy listings.
+* @param {string} sku - The item's SKU.
+* @returns {Promise<{ keys: number, metal: number }>} - A Promise that resolves to an object representing the calculated buy price with `keys` and `metal` properties.
+*/
 async function getUnusualBuy(buyListings, sku) {
     let buy = { keys: 0, metal: 0 };
 
@@ -303,7 +331,19 @@ async function getUnusualBuy(buyListings, sku) {
     }
 }
 
-
+/**
+* Calculates the buy and sell prices for a given item SKU.
+*
+* @param {string} sku - The item's SKU.
+* @returns {Promise<{ buy: { keys: number, metal: number }, sell: { keys: number, metal: number }, currency: string, name: string, sku: string, source: string, time: number }>} - A Promise that resolves to an object containing:
+*     - `buy`: The calculated buy price.
+*     - `sell`: The calculated sell price.
+*     - `currency`: The currency used for the prices.
+*     - `name`: The name of the item.
+*     - `sku`: The item's SKU.
+*     - `source`: The source of the price data.
+*     - `time`: The timestamp when the prices were calculated.
+*/
 async function getPrice(sku) {
     const attributes = parseSKU(sku);
     const name = stringify(attributes);
