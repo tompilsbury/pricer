@@ -42,6 +42,8 @@ async function apiCall(name) {
         const listings = response.data['listings'];
         if (!listings) throw new Error("No listings found in API response.");
 
+        // filterListings separates the listings into "buy" and "sell" based on the listing intent.
+        // Also removes listings that aren't bots, are in the config's ignored steamids, are listed for real money, have additional attributes.
         const filterListings = (intent, listings) =>
             listings.filter(i => i.intent === intent && i.userAgent && !botSteamIDs.has(i.steamid) &&
                 (!i.currencies || !i.currencies.usd) &&
@@ -63,6 +65,8 @@ async function apiCall(name) {
 
 /**
 * Calculates the buy price based on the provided buy listings.
+*
+* FUNCTION NEEDS REWRITING TO IMPROVE READABILITY: reduce nested conditional statements
 *
 * @param {Object} first - The first buy listing.
 * @param {Object} second - The second buy listing.
@@ -167,6 +171,8 @@ async function calculateBuyPrice(first, second, buyListings) {
 
 /**
 * Calculates the sell price based on the provided sell listings.
+*
+* FUNCTION NEEDS REWRITING TO IMPROVE READABILITY: reduce nested conditional statements
 *
 * @param {Object} first - The first sell listing.
 * @param {Object} second - The second sell listing.
@@ -365,6 +371,7 @@ async function getPrice(sku) {
     const [buyListings, sellListings] = await apiCall(name);
     const isUnusual = (sku.split(";"))[1] === "5";
 
+    // "5021;6" is the SKU of a Mann. Co Supply Crate Key (currency). This price is volatile, so we use the safer Prices.tf price.
     if (sku === "5021;6") {
         const price = await getPricesTFPrice(sku);
         return {
@@ -377,33 +384,35 @@ async function getPrice(sku) {
         };
     }
 
+    // Reverse the arrays to get the more desirable listings (highest buy & lowest sell) to the back. 
     buyListings.reverse();
     sellListings.reverse();
-    // console.log(sellListings[sellListings.length - 1])
-    for (i in buyListings) {
-        if (buyListings[i].steamid === "76561198110912705") {
-            console.log(buyListings[i].item.attributes)
-        }
-    }
 
     let buy = { keys: 0, metal: 0 };
     let sell = { keys: 0, metal: 0 };
     let xBuy, yBuy, xSell, ySell;
 
+    // More agressive buy prices for unusuals to stay competitive.
     if (isUnusual) {
         const [firstBuy, secondBuy] = [buyListings.pop(), buyListings.pop()];
         buy = await getUnusualBuy([firstBuy, secondBuy], sku);
-    } else {
+    } 
+    
+    else {
         if (buyListings.length >= 3) {
             const firstBuy = buyListings.pop();
             ({ buy, second: xBuy, third: yBuy } = await calculateBuyPrice(firstBuy, buyListings.pop(), buyListings));
-        } else if (buyListings.length > 0) {
+        } 
+        // Only one or two buy listings means we match the best one.
+        else if (buyListings.length > 0) {
             const firstBuy = buyListings.pop();
             buy = {
                 keys: 'keys' in firstBuy.currencies ? firstBuy.currencies.keys : 0,
                 metal: 'metal' in firstBuy.currencies ? firstBuy.currencies.metal : 0
             };
-        } else {
+        } 
+        // No buy listings means we use prices.tf for safe pricing.
+        else {
             buy = await getPricesTFPrice(sku).then(price => price.buy);
         }
     }
@@ -411,13 +420,17 @@ async function getPrice(sku) {
     if (sellListings.length >= 3) {
         const firstSell = sellListings.pop();
         ({ sell } = await calculateSellPrice(firstSell, sellListings.pop(), sellListings));
-    } else if (sellListings.length > 0) {
+    } 
+    // Only one or two sell listings means we match the best one.
+    else if (sellListings.length > 0) {
         const firstSell = sellListings.pop();
         sell = {
             keys: 'keys' in firstSell.currencies ? firstSell.currencies.keys : 0,
             metal: 'metal' in firstSell.currencies ? firstSell.currencies.metal : 0
         };
-    } else {
+    } 
+    // No sell listings means we use prices.tf for safe pricing.
+    else {
         sell = await getPricesTFPrice(sku).then(price => price.sell);
     }
 
@@ -425,11 +438,12 @@ async function getPrice(sku) {
     if (!buy || (buy.keys === 0 && buy.metal === 0)) {
         buy = await getPricesTFPrice(sku).then(price => price.buy);
     }
-    
     if (!sell || (sell.keys === 0 && sell.metal === 0)) {
         sell = await getPricesTFPrice(sku).then(price => price.sell);
     }
 
+    // Buying for more than selling -> keep calling calculateBuyPrice until we get a lower one.
+    // Sell price gets priority as it is safer to have a less-competitive buy price than sell price (for profit).
     while (buy && sell && buy.keys > sell.keys) {
         ({ buy, second: xBuy, third: yBuy } = await calculateBuyPrice(xBuy, yBuy, buyListings));
     }
@@ -445,7 +459,7 @@ async function getPrice(sku) {
         }
     }
 
-
+    // Populate the return object fields.
     dataFormat.buy = buy;
     dataFormat.sell = sell;
     dataFormat.name = name;

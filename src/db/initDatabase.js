@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 
+// Create a local database file. 
 const db = new sqlite3.Database('./src/db/prices.db');
 
 db.serialize(() => {
